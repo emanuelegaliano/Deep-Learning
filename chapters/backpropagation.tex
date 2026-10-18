@@ -1,0 +1,332 @@
+\chapter{Backpropagation}\label{ch:backprop}
+Nel capitolo precedente abbiamo visto che una rete neurale con almeno un hidden layer non può essere addestrata con la discesa del gradiente nella forma classica, perché il training set non fornisce alcuna ground truth per i layer intermedi. Eppure la discesa del gradiente ha bisogno, per ogni parametro della rete, della derivata della funzione di costo rispetto a quel parametro. La \textbf{backpropagation} è l'algoritmo che permette di calcolare tutte queste derivate in modo efficiente, sfruttando il fatto che una rete neurale è un \textbf{grafo computazionale} e che sui grafi computazionali la chain rule si applica in modo del tutto meccanico. In questo capitolo introduciamo i grafi computazionali e il modo in cui si valutano in avanti e all'indietro.
+
+\section{Il problema dell'apprendimento}
+Consideriamo una rete come quella in figura~\ref{fig:rete-esempio}, con 2 feature in input (estese con il bias), un hidden layer con 3 neuroni (più il bias) e un output layer con 2 neuroni. Indichiamo con $\vartheta$ l'insieme di tutti i parametri della rete, ovvero le matrici $\vartheta^{(1)} \in \mathbb{R}^{3\times 3}$ e $\vartheta^{(2)} \in \mathbb{R}^{2 \times 4}$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth, node distance=1.1cm,
+  neuron/.style={draw, circle, minimum size=8mm, inner sep=0pt, font=\scriptsize}]
+  % input
+  \node[neuron] (i0) at (0,1.6) {$1$};
+  \node[neuron] (i1) at (0,0.4) {$x_1$};
+  \node[neuron] (i2) at (0,-0.8) {$x_2$};
+  % hidden
+  \node[neuron, draw=red!70!black] (h0) at (3,2.2) {$1$};
+  \node[neuron, draw=red!70!black] (h1) at (3,1.0) {$a_1^{(2)}$};
+  \node[neuron, draw=red!70!black] (h2) at (3,-0.2) {$a_2^{(2)}$};
+  \node[neuron, draw=red!70!black] (h3) at (3,-1.4) {$a_3^{(2)}$};
+  % output
+  \node[neuron, draw=Accent] (o1) at (6,1.0) {$a_1^{(3)}$};
+  \node[neuron, draw=Accent] (o2) at (6,-0.4) {$a_2^{(3)}$};
+  \foreach \i in {i0,i1,i2} \foreach \h in {h1,h2,h3} \draw[->, TextGray] (\i) -- (\h);
+  \foreach \h in {h0,h1,h2,h3} \foreach \o in {o1,o2} \draw[->, TextGray] (\h) -- (\o);
+  \node[font=\scriptsize, TextGray] at (1.5,-2.2) {$\vartheta^{(1)} \in \mathbb{R}^{3\times 3}$};
+  \node[font=\scriptsize, TextGray] at (4.5,-2.2) {$\vartheta^{(2)} \in \mathbb{R}^{2\times 4}$};
+  \draw[->] (o1) -- ++(1.1,0) node[right, font=\scriptsize] {$h_\vartheta^{(1)}(x)$};
+  \draw[->] (o2) -- ++(1.1,0) node[right, font=\scriptsize] {$h_\vartheta^{(2)}(x)$};
+\end{tikzpicture}
+\caption{Una rete con 2 feature in input, un hidden layer con 3 neuroni (in rosso) e un output layer con 2 neuroni (in verde petrolio); i nodi con valore 1 sono le unità di bias. La matrice $\vartheta^{(1)}$ mappa l'input nell'hidden layer, la matrice $\vartheta^{(2)}$ mappa l'hidden layer nell'output.}
+\label{fig:rete-esempio}
+\end{figure}
+
+\paragraph{Feedforward propagation.}
+Prendendo in esempio la figura \ref{fig:rete-esempio}, abbiamo una rete già trainata con cui fare inferenza (quindi con i pesi $\vartheta$ fissati). Dato un input $x = [x_1, x_2]^T$, l'output della rete si calcola propagando in avanti le attivazioni dei neuroni. Le attivazioni del layer di input sono $a_0^{(1)} = x_0 = 1$, $a_1^{(1)} = x_1$ e $a_2^{(1)} = x_2$. Per calcolare le attivazioni dei layer successivi, si moltiplica la matrice dei pesi per il vettore delle attivazioni del layer precedente e si applica la funzione di attivazione $f$:
+\[
+  a_j^{(2)} = f(\sum_{i=0}^2 \vartheta_{j, i}^{(1)} a_i^{(1)}), \qquad j = 1, 2, 3
+\]
+dove rappresentiamo con $a_i^{(1)}$ le attivazioni del layer di input. 
+
+Volendo generalizzare questa forma, dobbiamo considerare una rete con $L$ layer, dove il layer $l$ ha $s_l$ unità. Quindi il layer $l+1$ ha $s_{l+1}$ unità, e la matrice dei pesi $\vartheta^{(l)}$ ha dimensione $s_{l+1} \times (s_l + 1)$, dove il +1 è per il bias. Le attivazioni del layer $l+1$ si calcolano come:
+\[
+a_j^{(l+1)} = f\Big(\sum_{i=0}^{s_l}\vartheta_{j,i}^{(l)}a_i^{(l)}\Big), \qquad j = 1, \dots, s_{l+1},
+\]
+con $a_0^{(l)} = 1$ per ogni $l$ (unità di bias). In forma vettoriale, indicando con $a^{(l)} \in \mathbb{R}^{s_l+1}$ il vettore delle attivazioni del layer $l$ (bias incluso) e con $f$ applicata elemento per elemento:
+\[
+z^{(l+1)} = \vartheta^{(l)}a^{(l)}, \qquad a^{(l+1)} = \begin{bmatrix} 1 \\ f\big(z^{(l+1)}\big) \end{bmatrix}.
+\]
+Il vettore $z^{(l+1)} \in \mathbb{R}^{s_{l+1}}$ contiene le somme pesate prima dell'attivazione. Il prodotto è ben definito perché $\vartheta^{(l)}$ ha $s_l + 1$ colonne, esattamente la lunghezza di $a^{(l)}$.
+
+La feedforward propagation consiste quindi \textbf{nel ripetere} questo passo da $l = 1$ a $l = L-1$, partendo dall'input:
+\begin{enumerate}
+    \item $a^{(1)} = [1, x_1, \dots, x_n]^T$, dove $n = s_1$ è il numero di feature.
+    \item Per $l = 1, \dots, L-1$: calcolare $z^{(l+1)} = \vartheta^{(l)}a^{(l)}$ e $a^{(l+1)} = f\big(z^{(l+1)}\big)$, aggiungendo il bias $a_0^{(l+1)} = 1$ se $l+1 < L$.
+    \item L'output della rete è $h_\vartheta(x) = a^{(L)} \in \mathbb{R}^{s_L}$.
+\end{enumerate}
+Nell'ultimo layer non si aggiunge il bias, perché non c'è un layer successivo a cui trasmetterlo.
+
+\paragraph{Learning.}
+Il problema dell'apprendimento consiste nel trovare l'insieme ottimale di pesi per cui la rete $h_\vartheta$ approssima il più possibile una funzione $F$, rispetto a una funzione di loss. La funzione $F$ non è data esplicitamente, ma solo implicitamente, attraverso gli esempi del training set. I pesi sono numeri reali piccoli, inizializzati casualmente e rispettando il symmetry breaking. Per determinarli bisogna usare la discesa del gradiente per ottenere il minimo della funzione di costo:
+\[
+J(\vartheta) = \frac{1}{2m}\sum_{i=1}^{m}L\big(\vartheta, x^{(i)}, y^{(i)}\big) + \underbrace{\frac{\lambda}{2}\sum_{l=1}^{L-1}\sum_{i=1}^{s_l}\sum_{j=1}^{s_{l+1}}\big(\vartheta_{ji}^{(l)}\big)^2}_{\text{regolarizzazione}}
+\]
+dove $L$ è la loss function, ovvero la cross-entropy per la classificazione o la MSE per la regressione. La discesa del gradiente richiede le derivate di $J(\vartheta)$ rispetto a ogni parametro:
+\[
+\vartheta_{ji}^{(l)} \leftarrow \vartheta_{ji}^{(l)} - \alpha\frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}}.
+\]
+
+Calcolare a mano la derivata per ogni cammino della rete è inefficiente, perché molti cammini condividono gli stessi tratti e gli stessi calcoli verrebbero ripetuti più volte. Serve quindi un algoritmo più furbo, che sfrutti due osservazioni:
+\begin{enumerate}
+    \item La rete è una composizione di funzioni derivabili.
+    \item Vale la proprietà della \textbf{chain rule}: se $F(x) = f(g(x))$, allora $F'(x) = g'(x)\,f'\big(g(x)\big)$.
+\end{enumerate}
+Per trovare un modo efficiente di calcolare il gradiente su una rete si ricorre ai grafi computazionali.
+
+\section{Grafi computazionali}
+\begin{definizione}[Grafo computazionale]
+Un \textbf{grafo computazionale} è un grafo orientato in cui:
+\begin{itemize}
+    \item I \textbf{nodi} sono unità di calcolo: ogni nodo calcola una singola \textbf{funzione primitiva} del proprio input, ad esempio una somma, un prodotto o $1/x$.
+    \item Gli \textbf{archi} trasmettono informazione numerica da un nodo all'altro, in avanti; un arco può essere \textbf{pesato}, e quando il peso non è indicato vale 1.
+\end{itemize}
+Le funzioni primitive devono essere \textbf{continue} e \textbf{derivabili}.
+\end{definizione}
+
+Una rete neurale feedforward rappresenta una catena di composizioni di funzioni che trasforma un input in un output, ed è quindi un grafo computazionale: i neuroni sono i nodi, i pesi $\vartheta_{ji}^{(l)}$ sono i pesi degli archi e le funzioni di attivazione sono le primitive dei nodi, assunte uguali per tutti i nodi.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth]
+  \node[opnode] (x) at (0,1.2) {$x$};
+  \node[opnode] (y) at (0,0) {$y$};
+  \node[opnode] (z) at (0,-1.4) {$z$};
+  \node[opnode, draw=teal!80!black, fill=teal!18, thick] (s1) at (2,0.6) {$+$};
+  \node[opnode, draw=teal!80!black, fill=teal!18, thick] (s2) at (4,-0.4) {$+$};
+  \draw[flow] (x) -- node[above, fwd] {$1$} (s1);
+  \draw[flow] (y) -- node[below, fwd] {$1$} (s1);
+  \draw[flow] (s1) -- node[above right, fwd] {$1$} (s2);
+  \draw[flow] (z) -- node[below, fwd] {$1$} (s2);
+  \draw[flow] (s2) -- (5.4,-0.4) node[right] {$f(x,y,z)$};
+  \node[font=\scriptsize, TextGray, above] at (2,1.0) {$x+y$};
+\end{tikzpicture}
+\caption{Esempio di Grafo Computazionale. Viene rappresentata la funzione $f(x,y,z) = (x+y)+z$: i nodi con lo sfondo verde petrolio calcolano la funzione primitiva somma, gli archi trasmettono i valori da sinistra verso destra e hanno tutti peso 1.}
+\label{fig:grafo-somma}
+\end{figure}
+
+\paragraph{Esempio.}
+Consideriamo la figura \ref{fig:grafo-somma}, che rappresenta un grafo computazionale per la funzione
+\[
+f(x, y, z) = (x + y) + z.
+\]
+La somma è una funzione primitiva, per cui la funzione si scompone in due nodi: il primo calcola $x + y$, il secondo somma $z$ al risultato del primo.
+
+\subsection{B-diagram}
+Per poter calcolare le derivate, si dà a ogni nodo della rete una struttura composta, ottenendo un \textbf{backpropagation diagram} (B-diagram). 
+\begin{definizione}[B-diagram]
+  Un \textbf{B-diagram} è un grafo orientato in cui ogni nodo è diviso in due metà: \begin{itemize}
+    \item la parte destra calcola la funzione primitiva del nodo;
+    \item la parte sinistra calcola la derivata della funzione primitiva del nodo.
+  \end{itemize}
+\end{definizione}
+
+Gli archi non hanno più una freccia, perché il grafo può essere percorso sia in avanti sia all'indietro (Figura \ref{fig:bnode}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[bnode, minimum height=12mm, font=\normalsize] (n) at (0,0) {$f'$ \nodepart{two} $f$};
+  \draw (n.west) -- ++(-1.4,0);
+  \draw (n.east) -- ++(1.4,0);
+  \node[font=\scriptsize, anchor=east, align=right] at (-0.6,-1.2) {derivata della\\funzione primitiva};
+  \node[font=\scriptsize, anchor=west, align=left] at (0.6,-1.2) {funzione primitiva\\del nodo};
+  \draw[->, TextGray] (-0.8,-0.85) -- (-0.3,-0.4);
+  \draw[->, TextGray] (0.8,-0.85) -- (0.3,-0.4);
+\end{tikzpicture}
+\hspace{1.5cm}
+\begin{tikzpicture}
+  \node[bnode] (s) at (0,0) {$1$ \nodepart{two} $+$};
+  \node[bnode] (a) at (2.6,0) {$\sigma'$ \nodepart{two} $\sigma$};
+  \draw (s.west) -- ++(-0.8,0.5);
+  \draw (s.west) -- ++(-0.9,0);
+  \draw (s.west) -- ++(-0.8,-0.5);
+  \draw (s.east) -- (a.west);
+  \draw (a.east) -- ++(0.9,0);
+\end{tikzpicture}
+\caption{A sinistra, un nodo di un B-diagram: la metà destra contiene la funzione primitiva $f$, la metà sinistra la sua derivata $f'$. A destra, un neurone con attivazione sigmoide scomposto in due nodi: un nodo di integrazione (somma), la cui derivata rispetto a ogni input è 1, seguito dal nodo di attivazione $\sigma$.}
+\label{fig:bnode}
+\end{figure}
+
+\paragraph{Nodi di integrazione e di attivazione.}
+Considerando le funzioni primitive, conviene separare la funzione di integrazione, ovvero la somma degli input di un neurone, dalla funzione di attivazione. Ad esempio, un neurone con attivazione sigmoide, il cui input è una combinazione lineare $z = \sum_i \vartheta_i x_i$, diventa la coppia di nodi a destra in figura~\ref{fig:bnode}: il nodo somma ha derivata 1 rispetto a ciascun input, mentre il nodo di attivazione calcola
+\[
+\sigma(z) = \frac{1}{1 + e^{-z}}, \qquad \sigma'(z) = \sigma(z)\big(1 - \sigma(z)\big) = \frac{1}{1 + e^{-z}}\left(1 - \frac{1}{1 + e^{-z}}\right).
+\]
+Gli archi tra un nodo e l'altro possono essere pesati.
+
+\subsection{Valutazione in due passi}
+Per il training, la rete viene valutata in due passi:
+\begin{enumerate}
+    \item \textbf{Feedforward step}: l'informazione va da sinistra verso destra. In ogni nodo vengono valutate sia le funzioni primitive (lato destro) sia le loro derivate (lato sinistro), e i risultati vengono memorizzati. I risultati del lato destro vengono inoltrati alle unità connesse sulla destra.
+    \item \textbf{Backward step}: serve a valutare gli errori e a propagarli all'indietro per aggiornare i parametri. In questo caso vengono usati i risultati del lato sinistro, ovvero le derivate. L'input dalla destra è sempre la costante 1.
+\end{enumerate}
+
+Per capire come si combinano le informazioni nel backward step bisogna considerare tre casi: la composizione di funzioni, la somma di funzioni e gli archi pesati.
+
+\paragraph{Caso 1: composizione di funzioni.}
+Consideriamo due nodi in serie, il primo con primitiva $g$ e il secondo con primitiva $f$, che calcolano quindi $f(g(x))$ (figura~\ref{fig:caso-composizione}). Nel feedforward step il primo nodo riceve $x$, memorizza $g'(x)$ e trasmette $g(x)$; il secondo memorizza $f'(g(x))$ e restituisce $f(g(x))$. Nel backward step si immette 1 da destra: il secondo nodo moltiplica l'input per il valore memorizzato a sinistra e trasmette $1\cdot f'(g(x))$; il primo fa lo stesso e restituisce
+\[
+1\cdot f'\big(g(x)\big)\,g'(x)
+\]
+che è esattamente la derivata della piccola rete secondo la chain rule. La backpropagation fornisce quindi un modo per implementare il principio della chain rule.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[font=\small, fwd] at (-1.4,0.9) {Feedforward};
+  \node (x) at (-1.4,0) {$x$};
+  \node[bnode, draw=Accent] (g) at (0.6,0) {$g'(x)$ \nodepart{two} $g(x)$};
+  \node[bnode, draw=Accent] (f) at (5.0,0) {$f'(g(x))$ \nodepart{two} $f(g(x))$};
+  \draw (x) -- (g.west);
+  \draw (g.east) -- node[above, fwd] {$g(x)$} (f.west);
+  \draw (f.east) -- ++(1.2,0) node[above left, fwd] {$f(g(x))$};
+  \draw[fwd, ->, thick] (-0.6,-0.7) -- (7.2,-0.7);
+  % backward
+  \node[font=\small, bwd] at (-1.4,-1.5) {Backward};
+  \node[bnode, draw=red!70!black] (g2) at (0.6,-2.3) {$g'(x)$ \nodepart{two} $g(x)$};
+  \node[bnode, draw=red!70!black] (f2) at (5.0,-2.3) {$f'(g(x))$ \nodepart{two} $f(g(x))$};
+  \draw (g2.west) -- ++(-0.6,0) node[left, bwd] {$1\cdot f'(g(x))\,g'(x)$};
+  \draw (g2.east) -- node[above, bwd] {$1\cdot f'(g(x))$} (f2.west);
+  \draw (f2.east) -- ++(1.0,0) node[right, bwd] {$1$};
+  \draw[bwd, <-, thick] (-0.6,-3.0) -- (7.2,-3.0);
+\end{tikzpicture}
+\caption{Caso 1, composizione di funzioni. In alto il feedforward step (in verde petrolio): ogni nodo memorizza la propria derivata a sinistra e trasmette il valore della primitiva a destra. In basso il backward step (in rosso): partendo dalla costante 1, ogni nodo moltiplica l'input proveniente da destra per la derivata memorizzata, ottenendo all'estremo sinistro la derivata $f'(g(x))\,g'(x)$ della composizione.}
+\label{fig:caso-composizione}
+\end{figure}
+
+In generale, se due nodi in serie hanno memorizzato i valori $B'$ e $A'$ durante il feedforward, il valore che attraversa all'indietro il nodo $A$ è $1\cdot A'$ e il valore che esce da $B$ è $1\cdot A' \cdot B'$, ovvero la derivata. Si noti che le derivate $g'(x)$ e $f'(g(x))$ vengono calcolate nel feedforward e usate nel backward, mentre $g(x)$ e $f(g(x))$ vengono calcolate e usate nel solo feedforward.
+
+\paragraph{Caso 2: somma di funzioni.}
+Consideriamo ora un input $x$ che viene inviato a due nodi $f_1$ e $f_2$, le cui uscite vengono sommate da un nodo $+$ (figura~\ref{fig:caso-somma}). Il nodo somma $F(x_1, x_2) = x_1 + x_2$ ha due derivate parziali, $\partial F/\partial x_1 = \partial F/\partial x_2 = 1$. Nel feedforward la rete calcola $f_1(x) + f_2(x)$. Nel backward step il nodo somma riceve 1 e lo trasmette, moltiplicato per 1, su entrambi i rami; ogni ramo lo moltiplica per la propria derivata, ottenendo $1\cdot 1\cdot f_1'(x)$ e $1\cdot 1\cdot f_2'(x)$. Andando all'indietro, \textbf{i valori che arrivano allo stesso nodo da rami diversi vengono sommati}, per cui all'estremo sinistro si ottiene
+\[
+f_1'(x) + f_2'(x)
+\]
+ovvero proprio la derivata di $f_1(x) + f_2(x)$. Un nodo il cui output viene inviato a più nodi è quindi equivalente a più copie dello stesso nodo, e i gradienti delle copie si sommano.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[bnode] (f1) at (3.2,1.0) {$f_1'(x)$ \nodepart{two} $f_1(x)$};
+  \node[bnode] (f2) at (3.2,-1.0) {$f_2'(x)$ \nodepart{two} $f_2(x)$};
+  \node[bnode] (s) at (6.8,0) {$1$ \nodepart{two} $+$};
+  \draw (0.6,0) node[left, bwd] {$f_1'(x) + f_2'(x)$} -- (1.3,0) coordinate (b);
+  \draw (b) -- node[above left, bwd, pos=0.55] {$1\cdot 1\cdot f_1'(x)$} (f1.west);
+  \draw (b) -- node[below left, bwd, pos=0.55] {$1\cdot 1\cdot f_2'(x)$} (f2.west);
+  \draw (f1.east) -- node[above right, bwd, pos=0.45] {$1\cdot 1$} (s.north west);
+  \draw (f2.east) -- node[below right, bwd, pos=0.45] {$1\cdot 1$} (s.south west);
+  \draw (s.east) -- ++(2.6,0) node[pos=0.55, above, fwd] {$f_1(x) + f_2(x)$} node[pos=0.55, below, bwd] {$1$};
+\end{tikzpicture}
+\caption{Caso 2, somma di funzioni. Il nodo somma restituisce $f_1(x) + f_2(x)$ nel feedforward (in verde petrolio); nel backward (in rosso) la costante 1 viene distribuita su entrambi i rami, ciascuno la moltiplica per la propria derivata e, nel punto in cui i rami si separano, i due contributi vengono sommati.}
+\label{fig:caso-somma}
+\end{figure}
+
+\paragraph{Caso 3: archi pesati.}
+Infine, consideriamo due nodi $A$ e $B$ collegati da un arco di peso $\vartheta$ (figura~\ref{fig:caso-pesi}). Nel feedforward il nodo $A$ restituisce $A(x)$, l'arco la moltiplica per $\vartheta$ e il nodo $B$ riceve $\vartheta A(x)$, restituendo $B(\vartheta A(x))$. Nel backward step il nodo $B$ trasmette $B'(\vartheta A(x))$, l'arco lo moltiplica per $\vartheta$ e il nodo $A$ lo moltiplica per la propria derivata, restituendo
+\[
+\vartheta\, B'\big(\vartheta A(x)\big)\, A'(x)
+\]
+che è la derivata di $B(\vartheta A(x))$ rispetto a $x$. I pesi modulano quindi i valori trasmessi \textbf{in entrambe le direzioni}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node (x) at (-1.0,0) {$x$};
+  \node[bnode] (a) at (0.6,0) {$A'(x)$ \nodepart{two} $A(x)$};
+  \node[bnode] (b) at (5.6,0) {$B'(\vartheta A(x))$ \nodepart{two} $B(\vartheta A(x))$};
+  \draw (x) -- (a.west);
+  \draw (a.east) -- node[above, fwd] {$\vartheta A(x)$} node[below, bwd] {$\vartheta B'(\vartheta A(x))$} (b.west);
+  \draw (b.east) -- ++(1.8,0) node[pos=0.5, above, fwd] {$B(\vartheta A(x))$} node[pos=0.55, below, bwd] {$1$};
+  \node[bwd, below left] at (0.2,-0.45) {$\vartheta B'(\vartheta A(x))A'(x)$};
+\end{tikzpicture}
+\caption{Caso 3, archi pesati. Sopra l'arco il valore trasmesso nel feedforward (in verde petrolio), sotto l'arco quello trasmesso nel backward (in rosso): in entrambe le direzioni il valore viene moltiplicato per il peso $\vartheta$.}
+\label{fig:caso-pesi}
+\end{figure}
+
+\subsection{L'algoritmo sul grafo}
+Mettendo insieme i tre casi, data una rete $F$ con input $x$, la derivata $F'(x)$ si calcola come segue:
+\begin{enumerate}
+    \item \textbf{Forward pass}: l'input viene valutato da sinistra verso destra lungo la rete; i valori delle funzioni primitive e delle loro derivate vengono calcolati e memorizzati in ogni nodo.
+    \item \textbf{Backward pass}: la costante 1 viene imposta come input destro della rete, e la rete viene percorsa da destra verso sinistra. L'informazione che arriva a un nodo viene sommata e il risultato viene moltiplicato per il valore memorizzato nella parte sinistra del nodo e per il peso dell'arco. Il risultato finale è la derivata di $F$ rispetto a $x$.
+\end{enumerate}
+
+\begin{osservazione}
+Qualunque grafo computazionale, ovvero qualunque composizione di funzioni, può essere valutato con la backpropagation per calcolarne le derivate. In questo senso la backpropagation non è un algoritmo specifico per le reti neurali, ma un modo generale di applicare la chain rule.
+\end{osservazione}
+
+\paragraph{Esempio.}
+Consideriamo la funzione
+\[
+f(x, y, z) = (x + y)\cdot z
+\]
+con input $x = -2$, $y = 5$, $z = -4$. Vogliamo calcolare $\dfrac{\partial f}{\partial x}$, $\dfrac{\partial f}{\partial y}$ e $\dfrac{\partial f}{\partial z}$.
+
+\textbf{Soluzione.} Scomponiamo la funzione nelle due primitive $q = x + y$ e $f = q\cdot z$, di cui conosciamo le derivate parziali:
+\[
+\frac{\partial q}{\partial x} = 1, \quad \frac{\partial q}{\partial y} = 1, \qquad \frac{\partial f}{\partial q} = z, \quad \frac{\partial f}{\partial z} = q.
+\]
+Per la chain rule:
+\[
+\frac{\partial f}{\partial x} = \frac{\partial f}{\partial q}\frac{\partial q}{\partial x} = z\cdot 1, \qquad
+\frac{\partial f}{\partial y} = \frac{\partial f}{\partial q}\frac{\partial q}{\partial y} = z\cdot 1, \qquad
+\frac{\partial f}{\partial z} = q.
+\]
+Sul grafo computazionale (figura~\ref{fig:esempio-qz}) procediamo in due passi:
+\begin{enumerate}
+    \item \textbf{Forward pass}: il nodo somma calcola $q = -2 + 5 = 3$, il nodo prodotto calcola $f = 3\cdot(-4) = -12$.
+    \item \textbf{Backward pass}: si immette 1 a destra. Il nodo prodotto trasmette verso $q$ il valore $1\cdot z = -4$ e verso $z$ il valore $1\cdot q = 3$. Il nodo somma riceve $-4$ e lo trasmette, moltiplicato per 1, sia verso $x$ sia verso $y$.
+\end{enumerate}
+Si ottiene quindi $\dfrac{\partial f}{\partial x} = -4$, $\dfrac{\partial f}{\partial y} = -4$ e $\dfrac{\partial f}{\partial z} = 3$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \node[bnode] (q) at (2.4,0.6) {$1,1$ \nodepart{two} $+$};
+  \node[bnode] (m) at (5.4,-0.2) {$z,q$ \nodepart{two} $*$};
+  \node (x) at (0,1.6) {$x$};
+  \node (y) at (0,-0.4) {$y$};
+  \node (z) at (0,-1.6) {$z$};
+  \draw (x) -- node[above, fwd, pos=0.35] {$-2$} node[below, bwd, pos=0.35] {$-4$} (q.west);
+  \draw (y) -- node[above, fwd, pos=0.35] {$5$} node[below, bwd, pos=0.35] {$-4$} (q.west);
+  \draw (q.east) -- node[above, fwd] {$3$} node[below, bwd] {$-4$} (m.west);
+  \draw (z) -- node[above, fwd, pos=0.3] {$-4$} node[below, bwd, pos=0.3] {$3$} (m.west);
+  \draw (m.east) -- ++(1.2,0) node[pos=0.5, above, fwd] {$-12$} node[pos=0.5, below, bwd] {$1$} node[right] {$f$};
+\end{tikzpicture}
+\caption{Forward e backward pass per $f(x,y,z) = (x+y)\cdot z$ con $x=-2$, $y=5$, $z=-4$. Sopra gli archi i valori del forward pass (in verde petrolio), sotto gli archi i valori del backward pass (in rosso), che coincidono con le derivate parziali di $f$ rispetto a ogni variabile. Nei nodi, a sinistra, sono riportate le derivate parziali della primitiva rispetto ai due input.}
+\label{fig:esempio-qz}
+\end{figure}
+
+\subsection{Il comportamento delle porte}
+L'esempio precedente mostra un comportamento ricorrente dei nodi, o \emph{porte}, più comuni durante il backward pass. Indicando con $A$ il gradiente che arriva da destra (figura~\ref{fig:porte}):
+\begin{itemize}
+    \item \textbf{Add gate}: \emph{distribuisce} il gradiente, trasmettendo $A$ invariato a tutti i propri input.
+    \item \textbf{Mul gate}: \emph{scambia} il gradiente, ovvero trasmette a ciascun input $A$ moltiplicato per il valore dell'altro input: $A\cdot y$ verso $x$ e $A\cdot x$ verso $y$.
+    \item \textbf{Max gate}: \emph{instrada} il gradiente, trasmettendo $A$ solo all'input che era il massimo e $0$ agli altri, perché $\dfrac{\partial \max(x,y)}{\partial x} = \mathbf{1}\{x \geq y\}$ e $\dfrac{\partial \max(x,y)}{\partial y} = \mathbf{1}\{y \geq x\}$.
+\end{itemize}
+Inoltre, come visto nel caso 2, quando l'output di un nodo viene inviato a più rami \textbf{i gradienti dei rami si sommano}.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+  \foreach \cx/\op/\out/\ga/\gb/\lab in {0/+/x+y/A/A/Add gate, 4/*/x\cdot y/A\cdot y/A\cdot x/Mul gate, 8/\max/\max(x\text{,}y)/A/0/{Max gate ($x>y$)}} {
+    \node[opnode, minimum size=9mm] (g) at (\cx,0) {$\op$};
+    \draw (\cx-1.3,0.8) node[left, font=\small] {$x$} -- (g);
+    \draw (\cx-1.3,-0.8) node[left, font=\small] {$y$} -- (g);
+    \draw (g) -- (\cx+1.5,0);
+    \node[fwd, above] at (\cx+1.0,0.05) {$\out$};
+    \node[bwd, below] at (\cx+1.0,-0.05) {$A$};
+    \node[bwd] at (\cx-0.45,0.75) {$\ga$};
+    \node[bwd] at (\cx-0.45,-0.75) {$\gb$};
+    \node[font=\small\bfseries] at (\cx,-1.4) {\lab};
+  }
+\end{tikzpicture}
+\caption{Comportamento delle porte durante il backward pass, con in verde petrolio l'output del forward pass e in rosso i gradienti: la add gate distribuisce il gradiente $A$, la mul gate lo scambia moltiplicandolo per l'altro input e la max gate lo instrada verso l'input massimo.}
+\label{fig:porte}
+\end{figure}
+
+\section*{Riferimenti}
+Il materiale visto in questo capitolo comprende:
+\begin{itemize}
+    \item Materiale visto a lezione (13 ottobre 2026).
+    \item Slide del corso \emph{Backpropagation (via Computational Graphs)}.
+    \item Capitolo 7, \emph{The Backpropagation Algorithm}, del libro \citetitle{Rojas1996} \cite{Rojas1996}.
+\end{itemize}
