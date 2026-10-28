@@ -15,7 +15,7 @@ Il classificatore assegna a $x'$ la classe dell'esempio del training set più vi
 \[
 h(x') = y^{(j)}, \qquad j = \arg\min_{i} D\big(x', x^{(i)}\big)
 \]
-dove $x^{(j)}$ è il \textbf{nearest neighbor} di $x'$ e $y^{(j)}$ la sua etichetta. Questo algoritmo si chiama nearest neighbor, o \textbf{1-NN}. L'algoritmo~\ref{alg:1nn} lo riporta nella versione vista a lezione, in cui la distanza è calcolata sulle rappresentazioni $\phi$.
+dove $x^{(j)}$ è il \textbf{nearest neighbor} di $x'$ e $y^{(j)}$ la sua etichetta. Questo algoritmo si chiama nearest neighbor, o \textbf{1-NN}. L'algoritmo~\ref{alg:1nn} lo riporta in una versione in cui la distanza è calcolata sulle rappresentazioni $\phi$.
 
 \begin{algorithm}[htbp]
 \caption{Classificazione 1-NN}\label{alg:1nn}
@@ -72,7 +72,7 @@ Il KNN è un algoritmo supervisionato, perché usa le etichette del training set
 Il KNN funziona molto bene su dati con poche feature, ma soffre della \textbf{curse of dimensionality} (maledizione della dimensionalità). Al crescere del numero di dimensioni i dati diventano sparsi, e la distanza dal punto più vicino e quella dal punto più lontano diventano quasi uguali. Se tutti i punti sono ``ugualmente lontani'', il concetto di vicino perde di significato. Per questo, su dati ad alta dimensionalità come le immagini, conviene calcolare le distanze su una rappresentazione $\phi(x)$ compatta e non sui pixel.
 
 \subsection{K-means}
-Il \textbf{K-means} sfrutta la stessa idea per il \textbf{clustering}. In questo caso non abbiamo etichette (è un algoritmo non supervisionato), e vogliamo dividere automaticamente i dati in $K$ gruppi (o cluster) di elementi vicini tra loro. L'output è quindi una partizione dello spazio di input. L'algoritmo~\ref{alg:kmeans} riporta la versione vista a lezione.
+Il \textbf{K-means} sfrutta la stessa idea per il \textbf{clustering}. In questo caso non abbiamo etichette (è un algoritmo non supervisionato), e vogliamo dividere automaticamente i dati in $K$ gruppi (o cluster) di elementi vicini tra loro. L'output è quindi una partizione dello spazio di input. L'algoritmo~\ref{alg:kmeans} ne riporta lo pseudocodice.
 
 \begin{algorithm}[htbp]
 \caption{Clustering K-means}\label{alg:kmeans}
@@ -497,7 +497,7 @@ dove $\alpha_1$ e $\alpha_2$ sono due margini. Il primo termine chiede che $x^{(
   \draw[<->, shorten <=1pt, shorten >=1pt] (-15:2.0) -- (-15:2.8) node[midway, above] {$\alpha_2$};
   \node[align=center] at (5.4,-1.0) {minima distanza inter-class\\$>$\\massima distanza intra-class};
 \end{tikzpicture}
-\caption{La quadruplet loss vista a lezione: rispetto all'ancora $x^{(1)}$, il campione $x^{(4)}$ deve stare oltre $x^{(2)}$ di almeno $\alpha_1$, e il negativo $x^{(3)}$ oltre $x^{(4)}$ di almeno $\alpha_2$.}
+\caption{La quadruplet loss: rispetto all'ancora $x^{(1)}$, il campione $x^{(4)}$ deve stare oltre $x^{(2)}$ di almeno $\alpha_1$, e il negativo $x^{(3)}$ oltre $x^{(4)}$ di almeno $\alpha_2$.}
 \label{fig:quadruplet}
 \end{figure}
 
@@ -586,7 +586,7 @@ Anche la center loss, però, ha dei limiti. Negli ultimi anni sono apparse diver
     \item ArcFace (Deng et al., 2019 \cite{Deng2019}).
     \item Sub-center ArcFace (Deng et al., 2020 \cite{Deng2020}).
 \end{itemize}
-Non le tratteremo nel corso, ma si possono approfondire in autonomia.
+Non le tratteremo in dettaglio, ma si possono approfondire nei paper citati.
 
 \section*{Riferimenti}
 Il materiale visto in questo capitolo comprende:

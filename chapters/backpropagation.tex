@@ -587,7 +587,7 @@ Una volta ottenuti gli errori, le derivate rispetto ai parametri si ricavano com
 \[
 \frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}} = a_i^{(l)}\,\delta_j^{(l+1)}, \qquad l = 1, 2, 3
 \]
-ovvero, in forma matriciale, $\frac{\partial J}{\partial \vartheta^{(l)}} = \delta^{(l+1)}\big(a^{(l)}\big)^T$.\footnote{Nelle slide la stessa formula è scritta in forma compatta come $a^{(l)} \mathbin{.*} \delta^{(l+1)}$. Il prodotto $\delta^{(l+1)}\big(a^{(l)}\big)^T$ ha esattamente la dimensione di $\vartheta^{(l)}$, ovvero $s_{l+1} \times (s_l + 1)$.} Qui stiamo considerando un solo esempio e trascurando la regolarizzazione: l'algoritmo completo aggiunge entrambe le cose.
+ovvero, in forma matriciale, $\frac{\partial J}{\partial \vartheta^{(l)}} = \delta^{(l+1)}\big(a^{(l)}\big)^T$.\footnote{La stessa formula si trova anche in forma compatta come $a^{(l)} \mathbin{.*} \delta^{(l+1)}$. Il prodotto $\delta^{(l+1)}\big(a^{(l)}\big)^T$ ha esattamente la dimensione di $\vartheta^{(l)}$, ovvero $s_{l+1} \times (s_l + 1)$.} Qui stiamo considerando un solo esempio e trascurando la regolarizzazione: l'algoritmo completo aggiunge entrambe le cose.
 
 \subsection{L'algoritmo di backpropagation}
 Mettendo insieme forward e backward pass su tutto il training set si ottiene l'algoritmo~\ref{alg:backprop}. Per ogni esempio si accumulano le derivate in delle matrici $\Delta^{(l)}$, della stessa dimensione di $\vartheta^{(l)}$. Alla fine si fa la media e si aggiunge la regolarizzazione, ottenendo le matrici $D^{(l)}$.
@@ -613,7 +613,7 @@ Le matrici ottenute sono proprio le derivate della funzione di costo\footnote{Co
 \[
 \frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}} = D_{ji}^{(l)}
 \]
-e possono essere usate per aggiornare i parametri con la formula della discesa del gradiente. Il bias non viene regolarizzato\footnote{Nelle slide la condizione è scritta come $j = 0$. Con la nostra notazione, in cui $\vartheta_{ji}^{(l)}$ va dal nodo $i$ al nodo $j$, il peso del bias è quello che parte dall'unità $i = 0$.}, come già visto per la regressione logistica e il softmax.
+e possono essere usate per aggiornare i parametri con la formula della discesa del gradiente. Il bias non viene regolarizzato\footnote{In alcune formulazioni la condizione è scritta come $j = 0$. Con la nostra notazione, in cui $\vartheta_{ji}^{(l)}$ va dal nodo $i$ al nodo $j$, il peso del bias è quello che parte dall'unità $i = 0$.}, come già visto per la regressione logistica e il softmax.
 
 \section*{Riferimenti}
 Il materiale visto in questo capitolo comprende:

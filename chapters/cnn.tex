@@ -3,7 +3,7 @@ Le \textbf{Convolutional Neural Network} (CNN) sono reti neurali pensate per ela
 
 \section{Dalle reti neurali alle immagini}
 \subsection{Representation learning}
-Riprendiamo un MLP con un solo hidden layer, ad esempio con 4 input e 3 output. Rispetto al capitolo~\ref{ch:ripasso}, qui scriviamo il bias $b$ separato dai pesi $\vartheta$, come nelle slide del corso. La rete calcola:
+Riprendiamo un MLP con un solo hidden layer, ad esempio con 4 input e 3 output. Rispetto al capitolo~\ref{ch:ripasso}, qui scriviamo il bias $b$ separato dai pesi $\vartheta$. La rete calcola:
 \[
 F_\vartheta(x) = \vartheta_2\, f(\vartheta_1 x + b_1) + b_2
 \]
@@ -602,7 +602,7 @@ che non è intero: il kernel non riesce a coprire l'input con passi regolari. Se
 \end{osservazione}
 
 \subsection{Un esempio reale: AlexNet}\label{subsec:alexnet}
-Applichiamo la formula a una rete reale, \textbf{AlexNet} \cite{Krizhevsky2012}, ovvero la CNN di figura~\ref{fig:cnn-arch}. L'input è un'immagine RGB di $227 \times 227 \times 3$ pixel\footnote{Il paper e le slide riportano un input di $224 \times 224$, ma con questa dimensione la formula non restituisce un numero intero. I conti tornano con $227 \times 227$, che è la dimensione usata nelle implementazioni della rete.}. Il primo layer convoluzionale ha 96 filtri di $11 \times 11 \times 3$, con stride $S = 4$ e senza padding. La dimensione dell'output è quindi:
+Applichiamo la formula a una rete reale, \textbf{AlexNet} \cite{Krizhevsky2012}, ovvero la CNN di figura~\ref{fig:cnn-arch}. L'input è un'immagine RGB di $227 \times 227 \times 3$ pixel\footnote{Il paper riporta un input di $224 \times 224$, ma con questa dimensione la formula non restituisce un numero intero. I conti tornano con $227 \times 227$, che è la dimensione usata nelle implementazioni della rete.}. Il primo layer convoluzionale ha 96 filtri di $11 \times 11 \times 3$, con stride $S = 4$ e senza padding. La dimensione dell'output è quindi:
 \[
 \frac{227 - 11 + 0}{4} + 1 = 55
 \]
