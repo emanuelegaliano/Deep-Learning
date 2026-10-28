@@ -1,5 +1,5 @@
 \chapter{Backpropagation}\label{ch:backprop}
-Nel capitolo precedente abbiamo visto che una rete neurale con almeno un hidden layer non può essere addestrata con la discesa del gradiente nella forma classica, perché il training set non fornisce alcuna ground truth per i layer intermedi. Eppure la discesa del gradiente ha bisogno, per ogni parametro della rete, della derivata della funzione di costo rispetto a quel parametro. La \textbf{backpropagation} è l'algoritmo che permette di calcolare tutte queste derivate in modo efficiente, sfruttando il fatto che una rete neurale è un \textbf{grafo computazionale} e che sui grafi computazionali la chain rule si applica in modo del tutto meccanico. In questo capitolo introduciamo i grafi computazionali e il modo in cui si valutano in avanti e all'indietro.
+Nel capitolo precedente abbiamo visto che una rete neurale con almeno un hidden layer non può essere addestrata con la discesa del gradiente nella forma classica, perché il training set non fornisce alcuna ground truth per i layer intermedi. Eppure la discesa del gradiente ha bisogno, per ogni parametro della rete, della derivata della funzione di costo rispetto a quel parametro. La \textbf{backpropagation} è l'algoritmo che permette di calcolare tutte queste derivate in modo efficiente, sfruttando il fatto che una rete neurale è un \textbf{grafo computazionale} e che sui grafi computazionali la chain rule si applica in modo del tutto meccanico. In questo capitolo introduciamo i grafi computazionali e il modo in cui si valutano in avanti e all'indietro, poi applichiamo questi strumenti a una rete multistrato per arrivare all'algoritmo di backpropagation vero e proprio.
 
 \section{Il problema dell'apprendimento}
 Consideriamo una rete come quella in figura~\ref{fig:rete-esempio}, con 2 feature in input (estese con il bias), un hidden layer con 3 neuroni (più il bias) e un output layer con 2 neuroni. Indichiamo con $\vartheta$ l'insieme di tutti i parametri della rete, ovvero le matrici $\vartheta^{(1)} \in \mathbb{R}^{3\times 3}$ e $\vartheta^{(2)} \in \mathbb{R}^{2 \times 4}$.
@@ -323,10 +323,300 @@ Inoltre, come visto nel caso 2, quando l'output di un nodo viene inviato a più 
 \label{fig:porte}
 \end{figure}
 
+\section{Backpropagation su una rete multistrato}\label{sec:backprop-mlp}
+Finora abbiamo usato la backpropagation per derivare funzioni qualsiasi, scritte come grafi computazionali. Torniamo ora al problema da cui siamo partiti: addestrare una rete con uno o più hidden layer per la \textbf{classificazione multiclasse}. In questa sezione mettiamo insieme i pezzi e arriviamo all'algoritmo che si usa in pratica.
+
+\subsection{La funzione di costo}
+Consideriamo un problema con $K$ classi. Come visto nel capitolo~\ref{ch:ripasso}, l'etichetta di ogni esempio è un vettore one-hot $y^{(i)} \in \mathbb{R}^K$, ad esempio con $K = 3$:
+\[
+y \in \left\{ \begin{bmatrix} 1 \\ 0 \\ 0 \end{bmatrix}, \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix}, \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix} \right\}.
+\]
+
+A seconda del task si usano due funzioni di costo. Nel caso \textbf{binario e multi-label} (un esempio può appartenere a più classi) ogni neurone di output è una regressione logistica indipendente, e si sommano le cross-entropy binarie:
+\[
+J(\vartheta) = -\frac{1}{m}\sum_{i=1}^{m}\sum_{k=1}^{K}\Big[y_k^{(i)}\log\big(h_\vartheta(x^{(i)})\big)_k + \big(1 - y_k^{(i)}\big)\log\Big(1 - \big(h_\vartheta(x^{(i)})\big)_k\Big)\Big]
+\]
+dove $\big(h_\vartheta(x^{(i)})\big)_k$ è la $k$-esima componente dell'output della rete. Nel caso \textbf{categorico}, invece, ogni esempio ha una sola classe, l'output layer è un softmax e si usa la cross-entropy:
+\[
+J(\vartheta) = -\frac{1}{m}\sum_{i=1}^{m}\sum_{k=1}^{K} y_k^{(i)}\log\big(h_\vartheta(x^{(i)})\big)_k.
+\]
+In entrambi i casi l'obiettivo è minimizzare $J(\vartheta)$ con la discesa del gradiente, per cui ci servono le derivate
+\[
+\frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}} \qquad \forall i, j, l.
+\]
+
+\subsection{La rete estesa}
+Per calcolare queste derivate con la backpropagation, la funzione di costo deve far parte del grafo. Si costruisce quindi una rete più grande.
+
+\begin{definizione}[Rete estesa]
+La \textbf{rete estesa} (extended network) è la rete che include la funzione di loss ed è estesa a tutti gli esempi del training set, che sono noti in anticipo.
+\end{definizione}
+
+In pratica, come in figura~\ref{fig:rete-estesa}, la rete viene replicata una volta per ogni esempio $x^{(i)}$, con $i = 1, \dots, m$. Tutte le copie \textbf{condividono gli stessi pesi} $\vartheta$. A valle dei $K$ neuroni di output di ogni copia si aggiungono i nodi che calcolano l'errore.
+
+Nella figura, che segue il libro di Rojas, l'errore è quello quadratico: ogni nodo calcola $\frac{1}{2}\big(o_k^{(i)} - y_k^{(i)}\big)^2$, dove $o_k^{(i)}$ è l'output della rete per la classe $k$ e $y_k^{(i)}$ la $k$-esima componente del vettore one-hot. Un nodo somma raccoglie questi termini nell'errore $E_i$ dell'esempio $x^{(i)}$, e un ultimo nodo somma restituisce l'errore complessivo:
+\[
+E = \sum_{i=1}^{m}E_i = \frac{1}{2}\sum_{i=1}^{m}\sum_{k=1}^{K}\big(o_k^{(i)} - y_k^{(i)}\big)^2.
+\]
+Gli input e le etichette sono fissati, per cui $E$ è \textbf{una funzione dei soli parametri} della rete. Con la cross-entropy il discorso non cambia: cambiano soltanto i nodi che seguono l'output layer.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth, font=\scriptsize,
+  netblob/.style={draw=ObsColor, thick, rounded corners=8pt, fill=ObsColor!8, minimum width=2.1cm, minimum height=2.3cm, align=center},
+  outn/.style={draw, circle, minimum size=4mm, inner sep=0pt},
+  sumnode/.style={draw, circle, minimum size=5.5mm, inner sep=0pt, font=\small}]
+  \foreach \yy/\s/\lab in {0/1/{(1)}, -4.4/m/{(m)}} {
+    \begin{scope}[yshift=\yy cm]
+      \node[netblob] (net\s) at (0,0) {rete con\\hidden layer};
+      \node[font=\normalsize] at (-2.6,0) {$x^{\lab}$};
+      \draw (-1.7,0.8) node[left] {$x_0^{\lab}$} -- (-1.05,0.8);
+      \node at (-1.5,0.05) {$\vdots$};
+      \draw (-1.7,-0.8) node[left] {$x_n^{\lab}$} -- (-1.05,-0.8);
+      \foreach \k/\py in {1/0.8, 2/0.25, K/-0.8} {
+        \node[outn] (o\s\k) at (2.0,\py) {};
+        \draw (1.05,\py) -- (o\s\k);
+        \node[anchor=west] (e\s\k) at (2.4,\py) {$\frac{1}{2}\big(o_{\k}^{\lab} - y_{\k}^{\lab}\big)^2$};
+      }
+      \node at (2.0,-0.22) {$\vdots$};
+      \node[sumnode] (s\s) at (5.6,0) {$+$};
+      \foreach \k in {1,2,K} \draw (e\s\k.east) -- (s\s);
+      \node (E\s) at (6.5,0) {$E_{\s}$};
+      \draw (s\s) -- (E\s);
+      \node[TextGray, anchor=west] at (1.75,-1.25) {$K$ neuroni di output};
+    \end{scope}
+  }
+  \node at (0,-2.2) {$\vdots$};
+  \node[TextGray] at (-2.6,-2.2) {$\forall\, x^{(i)},\ i = 1, \dots, m$};
+  \draw[dashed, ObsColor, thick, <->] (net1.south) ++(0.6,0) -- ([xshift=0.6cm]netm.north) node[midway, right, ObsColor] {pesi $\vartheta$ condivisi};
+  \node[sumnode] (S) at (7.8,-2.2) {$+$};
+  \draw (E1) -| (S);
+  \draw (Em) -| (S);
+  \draw (S) -- ++(0.8,0) node[right, font=\small] {$E$};
+\end{tikzpicture}
+\caption{La rete estesa. La rete viene replicata per ogni esempio $x^{(i)}$ del training set (tutte le copie condividono i pesi $\vartheta$). Dopo i $K$ neuroni di output si calcolano gli errori $\frac{1}{2}(o_k^{(i)} - y_k^{(i)})^2$, che vengono sommati prima nell'errore $E_i$ del singolo esempio e poi nell'errore complessivo $E$. Il risultato è una funzione dei soli parametri della rete.}
+\label{fig:rete-estesa}
+\end{figure}
+
+\subsection{Il calcolo nel singolo nodo}
+Ogni nodo della rete estesa esegue un calcolo \textbf{locale}. Consideriamo un nodo con primitiva $F$ che riceve due input $x_1$ e $x_2$ lungo archi di peso $w_1$ e $w_2$ (figura~\ref{fig:nodo-locale}, a sinistra). Nel forward pass il nodo restituisce $z = F(w_1x_1, w_2x_2)$. Inoltre memorizza nella metà sinistra le derivate parziali di $F$ rispetto a ciascun input\footnote{Quando la primitiva ha più variabili, la metà sinistra del B-diagram contiene una derivata parziale per ogni input, e non più una sola derivata come nei casi visti finora.}. Nel backward pass arriva da destra il gradiente $\frac{\partial L}{\partial z}$, e il nodo trasmette verso ogni input:
+\[
+\frac{\partial L}{\partial x_1} = \frac{\partial L}{\partial z}\,\frac{\partial F}{\partial x_1}\,w_1, \qquad \frac{\partial L}{\partial x_2} = \frac{\partial L}{\partial z}\,\frac{\partial F}{\partial x_2}\,w_2
+\]
+dove $\frac{\partial F}{\partial x_1}$ indica la derivata parziale di $F$ rispetto al suo primo argomento. Sono esattamente i casi 1 e 3 visti prima: si moltiplica per la derivata memorizzata e per il peso dell'arco.
+
+Torniamo alla rete estesa. Vogliamo calcolare, per ogni parametro $\vartheta_{ji}^{(l)}$, la derivata
+\[
+\frac{\partial E}{\partial \vartheta_{ji}^{(l)}}
+\]
+dove $l$ è il layer e il parametro collega il nodo $i$ del layer $l$ al nodo $j$ del layer $l+1$. Indichiamo con $o_i^{(l)}$ l'output del nodo $i$. L'informazione che arriva al nodo $j$ lungo questo arco è $o_i^{(l)}\vartheta_{ji}^{(l)}$, per cui il nodo $j$ calcola nel backward pass la derivata $\frac{\partial E}{\partial\, o_i^{(l)}\vartheta_{ji}^{(l)}}$ (figura~\ref{fig:nodo-locale}, a destra).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth, font=\scriptsize]
+  % nodo generico F
+  \draw[thick, rounded corners=14pt] (0,-1.2) rectangle (3,1.2);
+  \draw[thick] (1.5,-1.2) -- (1.5,1.2);
+  \draw[thick] (0,0) -- (1.5,0);
+  \node[red!70!black, font=\small] at (0.75,0.55) {$\dfrac{\partial F}{\partial x_1}$};
+  \node[Accent, font=\small] at (0.75,-0.55) {$\dfrac{\partial F}{\partial x_2}$};
+  \node[font=\large] at (2.25,0) {$F$};
+  \draw (-1.4,1.4) node[left, font=\small] {$x_1$} -- node[above, sloped, fwd] {$w_1$} (0,0.6);
+  \draw (-1.4,-1.4) node[left, font=\small] {$x_2$} -- node[below, sloped, fwd] {$w_2$} (0,-0.6);
+  \draw (3,0) -- (4.2,0);
+  \node[fwd, above] at (3.6,0.05) {$z$};
+  \node[bwd, below] at (3.6,-0.05) {$\dfrac{\partial L}{\partial z}$};
+  \node[bwd, anchor=east] at (-0.4,0.6) {$\dfrac{\partial L}{\partial x_1}$};
+  \node[bwd, anchor=east] at (-0.4,-0.6) {$\dfrac{\partial L}{\partial x_2}$};
+\end{tikzpicture}
+\hspace{0.4cm}
+\begin{tikzpicture}[>=Stealth, font=\scriptsize]
+  % nodo j della rete estesa
+  \draw[thick, rounded corners=14pt] (0,-1.2) rectangle (3,1.2);
+  \draw[thick] (1.5,-1.2) -- (1.5,1.2);
+  \draw[thick] (0,0) -- (1.5,0);
+  \node[bwd] at (0.75,0.55) {$\dfrac{\partial E}{\partial\, o_i^{(l)}\vartheta_{ji}^{(l)}}$};
+  \node[bwd] at (0.75,-0.55) {$\dfrac{\partial E}{\partial\, o_k^{(l)}\vartheta_{jk}^{(l)}}$};
+  \node[font=\large] at (2.25,0) {$f$};
+  \node[draw, circle, inner sep=1pt] (oi) at (-1.6,1.3) {$o_i^{(l)}$};
+  \node[draw, circle, inner sep=1pt] (ok) at (-1.6,-1.3) {$o_k^{(l)}$};
+  \draw (oi) -- node[above, sloped, fwd] {$\vartheta_{ji}^{(l)}$} (0,0.6);
+  \draw (ok) -- node[below, sloped, fwd] {$\vartheta_{jk}^{(l)}$} (0,-0.6);
+  \draw (3,0) -- (3.8,0) node[right, font=\small] {$\cdots\ E$};
+  \node[TextGray] at (1.5,-1.55) {nodo $j$ (layer $l+1$)};
+\end{tikzpicture}
+\caption{A sinistra, il calcolo locale in un nodo con primitiva $F$ e due input pesati: in verde petrolio i valori del forward pass, in rosso i gradienti del backward pass. A destra, il nodo $j$ della rete estesa: gli arrivano gli output $o_i^{(l)}$ e $o_k^{(l)}$ del layer precedente, moltiplicati per i pesi, e nel backward pass calcola la derivata dell'errore $E$ rispetto a ciascuna di queste informazioni.}
+\label{fig:nodo-locale}
+\end{figure}
+
+Il valore $o_i^{(l)}$ è già stato calcolato durante il forward pass, quindi nel backward pass è una \textbf{costante}. Per la chain rule possiamo scrivere:
+\[
+\frac{\partial E}{\partial \vartheta_{ji}^{(l)}} = \frac{\partial\, o_i^{(l)}\vartheta_{ji}^{(l)}}{\partial \vartheta_{ji}^{(l)}}\,\frac{\partial E}{\partial\, o_i^{(l)}\vartheta_{ji}^{(l)}} = o_i^{(l)}\,\tilde{\delta}_{ji}^{(l)}
+\]
+dove $\tilde{\delta}_{ji}^{(l)} = \frac{\partial E}{\partial\, o_i^{(l)}\vartheta_{ji}^{(l)}}$ è l'\textbf{errore propagato all'indietro} (backpropagated error) fino al nodo $j$. Ogni nodo, quindi, durante il training conserva:
+\begin{itemize}
+    \item $f$ e $f'$: la funzione primitiva e la sua derivata, calcolate sull'input $o_i^{(l)}\vartheta_{ji}^{(l)}$.
+    \item $a_{ji}$: il valore di $f$ calcolato nel forward pass.
+    \item $v_{ji}$: il valore di $f'$ calcolato nel forward pass.
+    \item $\tilde{\delta}_{ji}^{(l)}$: il risultato cumulativo del backward pass, ovvero la derivata dell'errore rispetto a $o_i^{(l)}\vartheta_{ji}^{(l)}$.
+\end{itemize}
+Ne consegue che, per ogni nodo, il gradiente dell'errore rispetto al parametro associato si calcola in modo molto semplice, e si può usare direttamente nella discesa del gradiente:
+\[
+\frac{\partial E}{\partial \vartheta_{ji}^{(l)}} = o_i^{(l)}\,\tilde{\delta}_{ji}^{(l)} \qquad \Longrightarrow \qquad \Delta\vartheta_{ji}^{(l)} = -\alpha\, o_i^{(l)}\,\tilde{\delta}_{ji}^{(l)}.
+\]
+Questo si può fare per ogni parametro della rete.
+
+\begin{osservazione}
+In una rete multistrato il nodo $j$ prima somma i propri input e poi applica l'attivazione. La derivata della somma rispetto a ciascun input vale 1, per cui $\tilde{\delta}_{ji}^{(l)}$ è uguale per tutti gli archi che entrano nel nodo $j$: dipende solo da $j$ e non da $i$. Per questo motivo, da qui in avanti, scriveremo un solo errore per nodo, $\delta_j^{(l+1)}$, e la formula diventa $\frac{\partial E}{\partial \vartheta_{ji}^{(l)}} = a_i^{(l)}\delta_j^{(l+1)}$, dove $a_i^{(l)} = o_i^{(l)}$ è l'attivazione del nodo $i$.
+\end{osservazione}
+
+\subsection{L'ultimo layer: softmax e cross-entropy}
+Per avviare il backward pass ci serve l'errore dell'ultimo layer. Nel caso categorico l'output è un softmax:
+\[
+\hat{y}_i = \frac{e^{z_i}}{\Sigma_K} \qquad \forall i = 1, \dots, K, \qquad \text{dove } \Sigma_K = \sum_{k=1}^{K}e^{z_k}
+\]
+e $z$ è il vettore dei logit. Per usare il softmax in una rete dobbiamo calcolarne la derivata, ovvero $\frac{\partial \hat{y}_i}{\partial z_j}$ per ogni coppia $i, j$. Lo facciamo con la regola del quoziente:
+\[
+f(x) = \frac{g(x)}{h(x)} \quad \Longrightarrow \quad f'(x) = \frac{g'(x)h(x) - h'(x)g(x)}{h^2(x)}
+\]
+dove $g = e^{z_i}$ e $h = \Sigma_K$. Ricordando che $\frac{\partial \Sigma_K}{\partial z_j} = e^{z_j}$, ci sono due casi:
+\begin{itemize}
+    \item \textbf{Se $i = j$}: anche il numeratore dipende da $z_i$, e
+    \[
+    \frac{\partial \hat{y}_i}{\partial z_i} = \frac{e^{z_i}\Sigma_K - e^{z_i}e^{z_i}}{\Sigma_K^2} = \frac{e^{z_i}}{\Sigma_K}\cdot\frac{\Sigma_K - e^{z_i}}{\Sigma_K} = \hat{y}_i(1 - \hat{y}_i).
+    \]
+    \item \textbf{Se $i \neq j$}: il numeratore non dipende da $z_j$, quindi la sua derivata è nulla, e
+    \[
+    \frac{\partial \hat{y}_i}{\partial z_j} = \frac{0 - e^{z_i}e^{z_j}}{\Sigma_K^2} = -\frac{e^{z_i}}{\Sigma_K}\cdot\frac{e^{z_j}}{\Sigma_K} = -\hat{y}_i\hat{y}_j.
+    \]
+\end{itemize}
+
+Consideriamo ora la cross-entropy su un singolo esempio\footnote{Il fattore $\frac{1}{m}$ e la somma sugli esempi non servono in questo calcolo: le derivate dei singoli esempi si sommano e si mediano alla fine, come vedremo nell'algoritmo.}, dove $\hat{y}$ è l'output del softmax e $y$ l'etichetta one-hot del pattern $x$:
+\[
+L = -\sum_{k=1}^{K}y_k\log(\hat{y}_k).
+\]
+Deriviamo rispetto al logit $z_i$, separando il termine $k = i$ da tutti gli altri e usando le due derivate appena calcolate:
+\[
+\begin{aligned}
+\frac{\partial L}{\partial z_i} &= -\sum_{k=1}^{K}y_k\frac{1}{\hat{y}_k}\frac{\partial \hat{y}_k}{\partial z_i}
+= -\frac{y_i}{\hat{y}_i}\,\hat{y}_i(1 - \hat{y}_i) - \sum_{k \neq i}\frac{y_k}{\hat{y}_k}\big(-\hat{y}_k\hat{y}_i\big) \\
+&= -y_i + y_i\hat{y}_i + \sum_{k \neq i}y_k\hat{y}_i
+= -y_i + \hat{y}_i\sum_{k=1}^{K}y_k = \hat{y}_i - y_i.
+\end{aligned}
+\]
+L'ultimo passaggio è il punto in cui serve il one-hot encoding: le componenti di $y$ sommano a 1, quindi $\sum_k y_k = 1$. Abbiamo così dimostrato il risultato già anticipato nella sezione~\ref{sec:softmax}: l'errore dell'ultimo layer è semplicemente la differenza tra la probabilità predetta e l'etichetta.
+
+\subsection{Forward e backward pass}
+Il training di una rete per la classificazione multiclasse segue questi passi:
+\begin{enumerate}
+    \item Inizializzazione dei parametri, con il symmetry breaking.
+    \item Per ogni esempio $(x^{(i)}, y^{(i)})$ del training set:
+    \begin{itemize}
+        \item forward propagation di $x^{(i)}$.
+        \item backpropagation, usando $y^{(i)}$, e calcolo delle derivate $\frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}}$.
+    \end{itemize}
+    \item Aggiornamento dei parametri con la discesa del gradiente.
+\end{enumerate}
+Vediamo i due passi centrali sulla rete in figura~\ref{fig:rete-4-layer}, con 3 feature in input, due hidden layer da 3 neuroni e 3 classi.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Stealth,
+  neuron/.style={draw=ObsColor, thick, circle, minimum size=7mm, inner sep=0pt, font=\scriptsize}]
+  \foreach \l/\xx in {1/0, 2/2.8, 3/5.6} {
+    \node[neuron] (n\l0) at (\xx,1.8) {$+1$};
+    \foreach \k/\yy in {1/0.6, 2/-0.6, 3/-1.8} \node[neuron] (n\l\k) at (\xx,\yy) {};
+    \node[font=\scriptsize, TextGray] at (\xx,2.6) {Layer \l};
+  }
+  \foreach \k in {1,2,3} \node[font=\scriptsize] at (n1\k) {$x_\k$};
+  \foreach \k/\yy in {1/1.2, 2/0, 3/-1.2} {
+    \node[neuron] (n4\k) at (8.4,\yy) {};
+    \draw[->] (n4\k) -- ++(0.9,0);
+  }
+  \node[font=\scriptsize, TextGray] at (8.4,2.6) {Layer 4};
+  \foreach \a/\b in {1/2, 2/3, 3/4}
+    \foreach \i in {0,1,2,3}
+      \foreach \j in {1,2,3}
+        \draw[->, TextGray] (n\a\i) -- (n\b\j);
+  \foreach \l/\xx in {1/1.4, 2/4.2, 3/7.0} \node[font=\scriptsize] at (\xx,-2.55) {$\vartheta^{(\l)}$};
+  \draw[->, very thick, Accent] (0,3.2) -- (8.4,3.2) node[midway, above, font=\scriptsize] {forward propagation: $a^{(1)}, z^{(2)}, a^{(2)}, \dots, a^{(4)}$};
+  \draw[->, very thick, red!70!black] (8.4,-3.1) -- (2.8,-3.1) node[midway, below, font=\scriptsize] {backpropagation: $\delta^{(4)}, \delta^{(3)}, \delta^{(2)}$};
+\end{tikzpicture}
+\caption{La rete usata nell'esempio: 3 feature in input, due hidden layer da 3 neuroni (più il bias, $+1$) e un output layer con 3 neuroni, uno per classe. In verde petrolio il verso del forward pass, in rosso quello del backward pass, che si ferma al layer 2: l'input non ha un errore da calcolare.}
+\label{fig:rete-4-layer}
+\end{figure}
+
+\paragraph{Forward propagation.}
+Si calcolano in ordine le attivazioni di tutti i layer, partendo dall'esempio $(x^{(i)}, y^{(i)})$:
+\[
+\begin{aligned}
+a^{(1)} &= x^{(i)}, \\
+z^{(2)} &= \vartheta^{(1)}a^{(1)}, & a^{(2)} &= f\big(z^{(2)}\big), \\
+z^{(3)} &= \vartheta^{(2)}a^{(2)}, & a^{(3)} &= f\big(z^{(3)}\big), \\
+z^{(4)} &= \vartheta^{(3)}a^{(3)}, & a^{(4)} &= h_\vartheta\big(x^{(i)}\big) = f\big(z^{(4)}\big)
+\end{aligned}
+\]
+dove a ogni $a^{(l)}$, tranne l'ultimo, si aggiunge in testa il bias. Ad esempio, nel primo passo $a^{(1)} = [1, x_1, x_2, x_3]^T$ e $\vartheta^{(1)} \in \mathbb{R}^{3 \times 4}$, per cui ogni componente di $z^{(2)}$ è una combinazione lineare dell'input:
+\[
+z_j^{(2)} = \vartheta_{j0}^{(1)} + \vartheta_{j1}^{(1)}x_1 + \vartheta_{j2}^{(1)}x_2 + \vartheta_{j3}^{(1)}x_3, \qquad j = 1, 2, 3.
+\]
+Nell'ultimo layer $f$ è il softmax. Come nel B-diagram, durante il forward pass conviene memorizzare anche le derivate $f'\big(z^{(l)}\big)$, che serviranno nel backward pass.
+
+\paragraph{Backpropagation.}
+Si parte dall'errore dell'output layer, che abbiamo appena calcolato per softmax e cross-entropy, e si torna indietro un layer alla volta:
+\[
+\begin{aligned}
+\delta^{(4)} &= a^{(4)} - y^{(i)}, \\
+\delta^{(3)} &= \big(\vartheta^{(3)}\big)^T\delta^{(4)} \mathbin{.*} f'\big(z^{(3)}\big), \\
+\delta^{(2)} &= \big(\vartheta^{(2)}\big)^T\delta^{(3)} \mathbin{.*} f'\big(z^{(2)}\big)
+\end{aligned}
+\]
+dove $.*$ indica il prodotto elemento per elemento. Non si calcola $\delta^{(1)}$, perché l'input è un dato e non ha errore.
+
+Controlliamo le dimensioni per $\delta^{(3)}$. La matrice $\vartheta^{(3)}$ mappa i 4 valori del layer 3 (bias compreso) nei 3 neuroni di output, quindi $\big(\vartheta^{(3)}\big)^T \in \mathbb{R}^{4 \times 3}$. Moltiplicata per $\delta^{(4)} \in \mathbb{R}^3$ restituisce un vettore di 4 componenti. La prima corrisponde al bias, che non ha input da cui ricevere l'errore, e viene scartata: ne restano 3, una per neurone, compatibili con $f'\big(z^{(3)}\big)$.
+
+La componente $j$-esima vale:
+\[
+\Big[\big(\vartheta^{(3)}\big)^T\delta^{(4)}\Big]_j = \vartheta_{1j}^{(3)}\delta_1^{(4)} + \vartheta_{2j}^{(3)}\delta_2^{(4)} + \vartheta_{3j}^{(3)}\delta_3^{(4)}
+\]
+ovvero la somma degli errori dei nodi a cui il neurone $j$ è collegato, ciascuno moltiplicato per il peso dell'arco. Sono di nuovo i casi 2 e 3 del B-diagram: i rami si sommano e i pesi moltiplicano. Il prodotto per $f'\big(z_j^{(3)}\big)$ corrisponde invece al caso 1, la derivata memorizzata nel nodo.
+
+Una volta ottenuti gli errori, le derivate rispetto ai parametri si ricavano come visto per il singolo nodo:
+\[
+\frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}} = a_i^{(l)}\,\delta_j^{(l+1)}, \qquad l = 1, 2, 3
+\]
+ovvero, in forma matriciale, $\frac{\partial J}{\partial \vartheta^{(l)}} = \delta^{(l+1)}\big(a^{(l)}\big)^T$\footnote{Nelle slide la stessa formula è scritta in forma compatta come $a^{(l)} \mathbin{.*} \delta^{(l+1)}$. Il prodotto $\delta^{(l+1)}\big(a^{(l)}\big)^T$ ha esattamente la dimensione di $\vartheta^{(l)}$, ovvero $s_{l+1} \times (s_l + 1)$.}. Qui stiamo considerando un solo esempio e trascurando la regolarizzazione: l'algoritmo completo aggiunge entrambe le cose.
+
+\subsection{L'algoritmo di backpropagation}
+Mettendo insieme forward e backward pass su tutto il training set si ottiene l'algoritmo~\ref{alg:backprop}. Per ogni esempio si accumulano le derivate in delle matrici $\Delta^{(l)}$, della stessa dimensione di $\vartheta^{(l)}$. Alla fine si fa la media e si aggiunge la regolarizzazione, ottenendo le matrici $D^{(l)}$.
+
+\begin{algorithm}[htbp]
+\caption{Backpropagation}\label{alg:backprop}
+\begin{algorithmic}[1]
+\Require training set $\{(x^{(1)}, y^{(1)}), \dots, (x^{(m)}, y^{(m)})\}$
+\State $\Delta_{ji}^{(l)} \gets 0 \quad \forall i, j, l$
+\For{$t = 1, \dots, m$}
+    \State $a^{(1)} \gets x^{(t)}$
+    \State forward propagation: calcolo di $a^{(2)}, a^{(3)}, \dots, a^{(L)}$
+    \State $\delta^{(L)} \gets a^{(L)} - y^{(t)}$
+    \State calcolo di $\delta^{(L-1)}, \delta^{(L-2)}, \dots, \delta^{(2)}$ con $\delta^{(l)} = \big(\vartheta^{(l)}\big)^T\delta^{(l+1)} \mathbin{.*} f'\big(z^{(l)}\big)$
+    \State $\Delta_{ji}^{(l)} \gets \Delta_{ji}^{(l)} + a_i^{(l)}\delta_j^{(l+1)} \quad \forall l = 1, \dots, L-1$
+\EndFor
+\State $D_{ji}^{(l)} \gets \frac{1}{m}\Delta_{ji}^{(l)}$ \textbf{se} $i = 0$ (bias)
+\State $D_{ji}^{(l)} \gets \frac{1}{m}\big(\Delta_{ji}^{(l)} + \lambda\vartheta_{ji}^{(l)}\big)$ altrimenti
+\end{algorithmic}
+\end{algorithm}
+
+Le matrici ottenute sono proprio le derivate della funzione di costo\footnote{Con la funzione di costo regolarizzata nella forma $J(\vartheta) = \frac{1}{m}\sum_{i} L + \frac{\lambda}{2m}\sum_{l,i,j}\big(\vartheta_{ji}^{(l)}\big)^2$, la stessa usata per il softmax.}:
+\[
+\frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}} = D_{ji}^{(l)}
+\]
+e possono essere usate per aggiornare i parametri con la formula della discesa del gradiente. Il bias non viene regolarizzato\footnote{Nelle slide la condizione è scritta come $j = 0$. Con la nostra notazione, in cui $\vartheta_{ji}^{(l)}$ va dal nodo $i$ al nodo $j$, il peso del bias è quello che parte dall'unità $i = 0$.}, come già visto per la regressione logistica e il softmax.
+
 \section*{Riferimenti}
 Il materiale visto in questo capitolo comprende:
 \begin{itemize}
-    \item Materiale visto a lezione (13 ottobre 2026).
-    \item Slide del corso \emph{Backpropagation (via Computational Graphs)}.
-    \item Capitolo 7, \emph{The Backpropagation Algorithm}, del libro \citetitle{Rojas1996} \cite{Rojas1996}.
+    \item Materiale visto a lezione (13 e 22 ottobre 2026).
+    \item Slide del corso \emph{Backpropagation (via Computational Graphs)} e \emph{Backpropagation Algorithm}.
+    \item Capitolo 7, \emph{The Backpropagation Algorithm}, del libro \citetitle{Rojas1996} \cite{Rojas1996}, in particolare la sezione 7.3 sulla rete estesa.
 \end{itemize}

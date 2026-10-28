@@ -43,6 +43,26 @@
   bwd/.style={color=red!70!black, font=\scriptsize},
   flow/.style={-{Stealth[length=2mm]}, thick},
 }
+
+% griglie per le convoluzioni (capitolo sulle CNN)
+% \numgrid[stile celle]{(x,y)}{lato}{{riga 1},{riga 2},...}: matrice di numeri, (x,y) è lo spigolo in alto a sinistra
+% \cellrect[stile]{(x,y)}{lato}{colonna}{riga}{n colonne}{n righe}: rettangolo su un blocco di celle (indici da 0)
+% \emptygrid[stile]{(x,y)}{lato}{n colonne}{n righe}: griglia vuota (lato multiplo di 1/8 per evitare errori di arrotondamento)
+\newcommand{\numgrid}[4][]{%
+  \edef\numgridlist{#4}%
+  \foreach \row [count=\ri] in \numgridlist {%
+    \foreach \val [count=\ci] in \row {%
+      \node[draw=TextGray, minimum size=#3cm, inner sep=0pt, font=\scriptsize, anchor=north west, #1]
+        at ($#2 + ({(\ci-1)*#3},{-(\ri-1)*#3})$) {$\val$};
+    }%
+  }%
+}
+\newcommand{\cellrect}[7][]{%
+  \draw[#1] ($#2 + ({#4*#3},{-#5*#3})$) rectangle ++({#6*#3},{-#7*#3});%
+}
+\newcommand{\emptygrid}[5][]{%
+  \draw[shift={#2}, step=#3cm, #1] (0,0) grid ({#4*#3},{-#5*#3});%
+}
 \usepackage{subcaption}
 
 % =====================================================
@@ -355,6 +375,9 @@ Versione: \today
 \part{Core Models and Methods}
 \input{chapters/ripasso}
 \input{chapters/backpropagation}
+\input{chapters/cnn}
+\input{chapters/addestramento-cnn}
+\input{chapters/metric-learning}
 
 % =====================================================
 % BIBLIOGRAPHY

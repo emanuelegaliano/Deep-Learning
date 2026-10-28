@@ -334,7 +334,7 @@ Softplus & $f(x) = \log(1 + e^{x})$ & $f'(x) = \dfrac{1}{1 + e^{-x}}$ \\
 \subsection{Il teorema di approssimazione universale}
 Il motivo per cui le reti neurali funzionano così bene su problemi non lineari è formalizzato dal seguente risultato.
 
-\begin{teorema}[Approssimazione universale]
+\begin{teorema}[Approssimazione universale]\label{teo:uat}
 Una rete neurale feedforward\footnote{Per feedforward si intende una rete in cui ogni layer riceve input esclusivamente dal layer precedente e lo trasmette al successivo, senza cicli.} con un solo hidden layer, dotata di un numero finito ma sufficientemente grande di neuroni e di una funzione di attivazione non lineare (ad esempio la sigmoide), è in grado di approssimare qualunque funzione continua $f : K \to \mathbb{R}$ definita su un insieme compatto $K \subset \mathbb{R}^n$ con errore arbitrariamente piccolo, ovvero per ogni $\varepsilon > 0$ esiste una rete che implementa $\hat{f}$ tale che
 \[
 \sup_{x \in K}\big|f(x) - \hat{f}(x)\big| < \varepsilon.
