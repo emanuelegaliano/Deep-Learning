@@ -1,4 +1,5 @@
-.w-knn .fig-svg { cursor: crosshair; touch-action: none; }
+/* il cerchio può essere più grande del riquadro: si taglia al bordo della figura */
+.w-knn .fig-svg { cursor: crosshair; touch-action: none; overflow: hidden; }
 .w-knn .regions { opacity: 0.18; image-rendering: pixelated; }
 .w-knn .c1 { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
 .w-knn .c2 { stroke: var(--obs); stroke-width: 2.5; fill: none; }
