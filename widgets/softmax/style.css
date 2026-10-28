@@ -1,0 +1,20 @@
+.w-softmax .head { fill: var(--ink-soft); font-family: var(--font-serif); font-style: italic; font-size: 14px; text-anchor: middle; }
+.w-softmax .edge { stroke-opacity: 0.2; transition: stroke-opacity calc(0.4s / var(--speed, 1)); }
+.w-softmax .edge.pos { stroke: var(--accent-soft); }
+.w-softmax .edge.neg { stroke: var(--hot); }
+.w-softmax .edge.zero { stroke-dasharray: 3 3; }
+.w-softmax .edge.on { stroke-opacity: 0.9; }
+.w-softmax .node circle { fill: var(--surface); stroke: var(--ink-soft); stroke-width: 1.4; transition: fill calc(0.4s / var(--speed, 1)); }
+.w-softmax .node.on circle { fill: color-mix(in oklab, var(--accent-soft) 25%, var(--surface)); stroke: var(--accent); }
+.w-softmax .val { fill: var(--ink); font-family: var(--font-mono); font-size: 11px; text-anchor: middle; dominant-baseline: central; }
+.w-softmax .name { fill: var(--ink-soft); font-family: var(--font-serif); font-style: italic; font-size: 12px; text-anchor: middle; }
+.w-softmax .track { fill: color-mix(in oklab, var(--rule) 40%, transparent); }
+.w-softmax .fill {
+  transform-box: fill-box; transform-origin: left center; transform: scaleX(0);
+  transition: transform calc(0.6s / var(--speed, 1)) cubic-bezier(0.4, 0, 0.2, 1), fill calc(0.3s / var(--speed, 1));
+}
+.w-softmax .fill.exp { fill: var(--obs); }
+.w-softmax .fill.p { fill: var(--accent-soft); }
+.w-softmax .fill.p.target { fill: var(--lemma); }
+.w-softmax .fill.lit { fill: var(--hot); }
+.w-softmax .barval { fill: var(--ink); font-family: var(--font-mono); font-size: 12px; dominant-baseline: central; }

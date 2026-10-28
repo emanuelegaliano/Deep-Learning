@@ -32,9 +32,9 @@ Consideriamo una rete come quella in figura~\ref{fig:rete-esempio}, con 2 featur
 \end{figure}
 
 \paragraph{Feedforward propagation.}
-Prendendo in esempio la figura \ref{fig:rete-esempio}, abbiamo una rete già trainata con cui fare inferenza (quindi con i pesi $\vartheta$ fissati). Dato un input $x = [x_1, x_2]^T$, l'output della rete si calcola propagando in avanti le attivazioni dei neuroni. Le attivazioni del layer di input sono $a_0^{(1)} = x_0 = 1$, $a_1^{(1)} = x_1$ e $a_2^{(1)} = x_2$. Per calcolare le attivazioni dei layer successivi, si moltiplica la matrice dei pesi per il vettore delle attivazioni del layer precedente e si applica la funzione di attivazione $f$:
+Prendendo ad esempio la figura~\ref{fig:rete-esempio}, abbiamo una rete già trainata con cui fare inferenza (quindi con i pesi $\vartheta$ fissati). Dato un input $x = [x_1, x_2]^T$, l'output della rete si calcola propagando in avanti le attivazioni dei neuroni. Le attivazioni del layer di input sono $a_0^{(1)} = x_0 = 1$, $a_1^{(1)} = x_1$ e $a_2^{(1)} = x_2$. Per calcolare le attivazioni dei layer successivi, si moltiplica la matrice dei pesi per il vettore delle attivazioni del layer precedente e si applica la funzione di attivazione $f$:
 \[
-  a_j^{(2)} = f(\sum_{i=0}^2 \vartheta_{j, i}^{(1)} a_i^{(1)}), \qquad j = 1, 2, 3
+  a_j^{(2)} = f\Big(\sum_{i=0}^2 \vartheta_{j, i}^{(1)} a_i^{(1)}\Big), \qquad j = 1, 2, 3
 \]
 dove rappresentiamo con $a_i^{(1)}$ le attivazioni del layer di input. 
 
@@ -59,7 +59,7 @@ Nell'ultimo layer non si aggiunge il bias, perché non c'è un layer successivo 
 \paragraph{Learning.}
 Il problema dell'apprendimento consiste nel trovare l'insieme ottimale di pesi per cui la rete $h_\vartheta$ approssima il più possibile una funzione $F$, rispetto a una funzione di loss. La funzione $F$ non è data esplicitamente, ma solo implicitamente, attraverso gli esempi del training set. I pesi sono numeri reali piccoli, inizializzati casualmente e rispettando il symmetry breaking. Per determinarli bisogna usare la discesa del gradiente per ottenere il minimo della funzione di costo:
 \[
-J(\vartheta) = \frac{1}{2m}\sum_{i=1}^{m}L\big(\vartheta, x^{(i)}, y^{(i)}\big) + \underbrace{\frac{\lambda}{2}\sum_{l=1}^{L-1}\sum_{i=1}^{s_l}\sum_{j=1}^{s_{l+1}}\big(\vartheta_{ji}^{(l)}\big)^2}_{\text{regolarizzazione}}
+J(\vartheta) = \frac{1}{m}\sum_{i=1}^{m}L\big(\vartheta, x^{(i)}, y^{(i)}\big) + \underbrace{\frac{\lambda}{2m}\sum_{l=1}^{L-1}\sum_{i=1}^{s_l}\sum_{j=1}^{s_{l+1}}\big(\vartheta_{ji}^{(l)}\big)^2}_{\text{regolarizzazione}}
 \]
 dove $L$ è la loss function, ovvero la cross-entropy per la classificazione o la MSE per la regressione. La discesa del gradiente richiede le derivate di $J(\vartheta)$ rispetto a ogni parametro:
 \[
@@ -105,7 +105,7 @@ Una rete neurale feedforward rappresenta una catena di composizioni di funzioni 
 \end{figure}
 
 \paragraph{Esempio.}
-Consideriamo la figura \ref{fig:grafo-somma}, che rappresenta un grafo computazionale per la funzione
+Consideriamo la figura~\ref{fig:grafo-somma}, che rappresenta un grafo computazionale per la funzione
 \[
 f(x, y, z) = (x + y) + z.
 \]
@@ -120,7 +120,7 @@ Per poter calcolare le derivate, si dà a ogni nodo della rete una struttura com
   \end{itemize}
 \end{definizione}
 
-Gli archi non hanno più una freccia, perché il grafo può essere percorso sia in avanti sia all'indietro (Figura \ref{fig:bnode}).
+Gli archi non hanno più una freccia, perché il grafo può essere percorso sia in avanti sia all'indietro (figura~\ref{fig:bnode}).
 
 \begin{figure}[htbp]
 \centering
@@ -279,6 +279,7 @@ Si ottiene quindi $\dfrac{\partial f}{\partial x} = -4$, $\dfrac{\partial f}{\pa
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{backprop-graph}[x=-2, y=5, z=-4]
 \begin{tikzpicture}
   \node[bnode] (q) at (2.4,0.6) {$1,1$ \nodepart{two} $+$};
   \node[bnode] (m) at (5.4,-0.2) {$z,q$ \nodepart{two} $*$};
@@ -291,6 +292,7 @@ Si ottiene quindi $\dfrac{\partial f}{\partial x} = -4$, $\dfrac{\partial f}{\pa
   \draw (z) -- node[above, fwd, pos=0.3] {$-4$} node[below, bwd, pos=0.3] {$3$} (m.west);
   \draw (m.east) -- ++(1.2,0) node[pos=0.5, above, fwd] {$-12$} node[pos=0.5, below, bwd] {$1$} node[right] {$f$};
 \end{tikzpicture}
+\end{widget}
 \caption{Forward e backward pass per $f(x,y,z) = (x+y)\cdot z$ con $x=-2$, $y=5$, $z=-4$. Sopra gli archi i valori del forward pass (in verde petrolio), sotto gli archi i valori del backward pass (in rosso), che coincidono con le derivate parziali di $f$ rispetto a ogni variabile. Nei nodi, a sinistra, sono riportate le derivate parziali della primitiva rispetto ai due input.}
 \label{fig:esempio-qz}
 \end{figure}
@@ -300,7 +302,7 @@ L'esempio precedente mostra un comportamento ricorrente dei nodi, o \emph{porte}
 \begin{itemize}
     \item \textbf{Add gate}: \emph{distribuisce} il gradiente, trasmettendo $A$ invariato a tutti i propri input.
     \item \textbf{Mul gate}: \emph{scambia} il gradiente, ovvero trasmette a ciascun input $A$ moltiplicato per il valore dell'altro input: $A\cdot y$ verso $x$ e $A\cdot x$ verso $y$.
-    \item \textbf{Max gate}: \emph{instrada} il gradiente, trasmettendo $A$ solo all'input che era il massimo e $0$ agli altri, perché $\dfrac{\partial \max(x,y)}{\partial x} = \mathbf{1}\{x \geq y\}$ e $\dfrac{\partial \max(x,y)}{\partial y} = \mathbf{1}\{y \geq x\}$.
+    \item \textbf{Max gate}: \emph{instrada} il gradiente, trasmettendo $A$ solo all'input che era il massimo e $0$ agli altri, perché $\dfrac{\partial \max(x,y)}{\partial x} = \mathbf{1}\{x \geq y\}$ e $\dfrac{\partial \max(x,y)}{\partial y} = \mathbf{1}\{y > x\}$.
 \end{itemize}
 Inoltre, come visto nel caso 2, quando l'output di un nodo viene inviato a più rami \textbf{i gradienti dei rami si sommano}.
 
@@ -418,7 +420,7 @@ dove $l$ è il layer e il parametro collega il nodo $i$ del layer $l$ al nodo $j
   \draw[thick, rounded corners=14pt] (0,-1.2) rectangle (3,1.2);
   \draw[thick] (1.5,-1.2) -- (1.5,1.2);
   \draw[thick] (0,0) -- (1.5,0);
-  \node[red!70!black, font=\small] at (0.75,0.55) {$\dfrac{\partial F}{\partial x_1}$};
+  \node[Accent, font=\small] at (0.75,0.55) {$\dfrac{\partial F}{\partial x_1}$};
   \node[Accent, font=\small] at (0.75,-0.55) {$\dfrac{\partial F}{\partial x_2}$};
   \node[font=\large] at (2.25,0) {$F$};
   \draw (-1.4,1.4) node[left, font=\small] {$x_1$} -- node[above, sloped, fwd] {$w_1$} (0,0.6);
@@ -585,7 +587,7 @@ Una volta ottenuti gli errori, le derivate rispetto ai parametri si ricavano com
 \[
 \frac{\partial J(\vartheta)}{\partial \vartheta_{ji}^{(l)}} = a_i^{(l)}\,\delta_j^{(l+1)}, \qquad l = 1, 2, 3
 \]
-ovvero, in forma matriciale, $\frac{\partial J}{\partial \vartheta^{(l)}} = \delta^{(l+1)}\big(a^{(l)}\big)^T$\footnote{Nelle slide la stessa formula è scritta in forma compatta come $a^{(l)} \mathbin{.*} \delta^{(l+1)}$. Il prodotto $\delta^{(l+1)}\big(a^{(l)}\big)^T$ ha esattamente la dimensione di $\vartheta^{(l)}$, ovvero $s_{l+1} \times (s_l + 1)$.}. Qui stiamo considerando un solo esempio e trascurando la regolarizzazione: l'algoritmo completo aggiunge entrambe le cose.
+ovvero, in forma matriciale, $\frac{\partial J}{\partial \vartheta^{(l)}} = \delta^{(l+1)}\big(a^{(l)}\big)^T$.\footnote{Nelle slide la stessa formula è scritta in forma compatta come $a^{(l)} \mathbin{.*} \delta^{(l+1)}$. Il prodotto $\delta^{(l+1)}\big(a^{(l)}\big)^T$ ha esattamente la dimensione di $\vartheta^{(l)}$, ovvero $s_{l+1} \times (s_l + 1)$.} Qui stiamo considerando un solo esempio e trascurando la regolarizzazione: l'algoritmo completo aggiunge entrambe le cose.
 
 \subsection{L'algoritmo di backpropagation}
 Mettendo insieme forward e backward pass su tutto il training set si ottiene l'algoritmo~\ref{alg:backprop}. Per ogni esempio si accumulano le derivate in delle matrici $\Delta^{(l)}$, della stessa dimensione di $\vartheta^{(l)}$. Alla fine si fa la media e si aggiunge la regolarizzazione, ottenendo le matrici $D^{(l)}$.

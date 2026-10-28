@@ -1,0 +1,6 @@
+/* padding / stride / dilation */
+.w-conv-params .cell.in { fill: color-mix(in oklab, var(--accent-soft) 20%, var(--surface)); }
+.w-conv-params .cell.pad { fill: var(--surface); stroke-dasharray: 3 3; }
+.w-conv-params .cell.uncov { fill: color-mix(in oklab, var(--obs) 35%, var(--surface)); }
+.w-conv-params .cp-stage { min-height: 8rem; }
+

@@ -10,6 +10,7 @@ In fase di test, invece, i neuroni sono sempre attivi. Per compensare, i pesi in
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{dropout}[p=0.5, units=5]
 \begin{tikzpicture}[font=\scriptsize, unit/.style={draw, circle, minimum size=4.5mm, inner sep=0pt}]
   % \actA, \actB, \actC: neuroni attivi di input, primo e secondo hidden layer nella rete assottigliata
   \def\actA{1,2,4,5}
@@ -40,6 +41,7 @@ In fase di test, invece, i neuroni sono sempre attivi. Per compensare, i pesi in
     \end{scope}
   }
 \end{tikzpicture}
+\end{widget}
 \caption{Dropout (da \cite{Srivastava2014}). A sinistra, una rete standard con due hidden layer. A destra, una rete assottigliata ottenuta applicando il dropout alla rete di sinistra: i neuroni barrati sono stati spenti, insieme alle loro connessioni.}
 \label{fig:dropout}
 \end{figure}
@@ -98,7 +100,7 @@ Addestrare una rete profonda \emph{from scratch}, ovvero partendo da pesi inizia
 Le strategie principali sono tre (figura~\ref{fig:transfer}).
 
 \paragraph{Fixed feature extractor.}
-Prendiamo un modello pre-addestrato su un task (ad esempio object detection), rimuoviamo l'ultimo layer fully connected e usiamo il resto della rete come feature extractor fisso per il nuovo dataset. Una volta estratte le feature dal nuovo dataset, addestriamo su di esse un classificatore, ad esempio un softmax. I parametri della rete originale restano fissi durante il training del classificatore. Come classificatore si può usare anche un metodo basato sulle distanze, come il KNN che vedremo nel capitolo~\ref{ch:metric-learning}.
+Prendiamo un modello pre-addestrato su un task (ad esempio object recognition), rimuoviamo l'ultimo layer fully connected e usiamo il resto della rete come feature extractor fisso per il nuovo dataset. Una volta estratte le feature dal nuovo dataset, addestriamo su di esse un classificatore, ad esempio un softmax. I parametri della rete originale restano fissi durante il training del classificatore. Come classificatore si può usare anche un metodo basato sulle distanze, come il KNN che vedremo nel capitolo~\ref{ch:metric-learning}.
 
 \paragraph{Fine-tuning.}
 Sostituiamo e riaddestriamo il classificatore sul nuovo dataset, ma aggiorniamo anche i pesi della rete pre-addestrata continuando la backpropagation. Si possono aggiornare tutti i layer, oppure tenere fissi i primi (per evitare l'overfitting) e aggiornare solo la parte più alta della rete. In pratica, con il nostro dataset addestriamo gli ultimi $k$ layer, e la backpropagation aggiorna solo i loro parametri.

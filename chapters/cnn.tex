@@ -210,6 +210,7 @@ Partiamo da un esempio (figura~\ref{fig:cane}). Applichiamo a un'immagine in sca
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{kernel-playground}
 \begin{tikzpicture}[>=Stealth, font=\small]
   \node (in) at (0,0) {\includegraphics[width=4cm]{images/cnn-dog-input.png}};
   \node[below=0pt of in] {Input};
@@ -221,6 +222,7 @@ Partiamo da un esempio (figura~\ref{fig:cane}). Applichiamo a un'immagine in sca
   \draw[->, thick] (in.east) -- (out.west);
   \draw[->, thick] (k2.east) -- (out.west);
 \end{tikzpicture}
+\end{widget}
 \caption{Esempio di convoluzione 2D (da \cite{Goodfellow-et-al-2016}): il kernel $[1, -1]$ sottrae a ogni pixel il suo vicino a destra. Le zone uniformi diventano grigie, mentre i bordi verticali del cane vengono messi in evidenza.}
 \label{fig:cane}
 \end{figure}
@@ -249,6 +251,7 @@ I pesi da apprendere in un layer convoluzionale sono \textbf{i valori del kernel
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{cross-correlation}
 \begin{tikzpicture}[>=Stealth, font=\scriptsize]
   % input
   \node[TextGray] at (1.2,0.3) {Input};
@@ -267,6 +270,7 @@ I pesi da apprendere in un layer convoluzionale sono \textbf{i valori del kernel
   \draw[->, red!70!black] (0.6,-1.2) -- (o00.north);
   \draw[->, red!70!black] (3.9,-1.2) to[out=-90, in=30] (o00.north east);
 \end{tikzpicture}
+\end{widget}
 \caption{Cross-correlation 2D (da \cite{Goodfellow-et-al-2016}): un kernel $2 \times 2$ scorre su un input $3 \times 4$ e produce un output $2 \times 3$. In rosso la prima posizione del kernel e il valore corrispondente dell'output. I pesi da apprendere sono soltanto i 4 valori del kernel.}
 \label{fig:cross-corr}
 \end{figure}
@@ -284,7 +288,7 @@ dove $G$ è l'output. L'unica differenza è il segno degli indici: la convoluzio
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[font=\small]
-  \foreach \xx/\lab/\vals in {0/{Kernel $F$}/{{a,b,c},{d,e,f},{g,h,i}}, 4.2/{Kernel ribaltato}/{{i,h,g},{f,e,d},{c,b,a}}} {
+  \foreach \xx/\lab/\vals in {0/{Kernel $h$}/{{a,b,c},{d,e,f},{g,h,i}}, 4.2/{Kernel ribaltato}/{{i,h,g},{f,e,d},{c,b,a}}} {
     \numgrid[draw=Accent, font=\small]{(\xx,0)}{0.6}{\vals}
     \foreach \lb [count=\cc from 0] in {-1,0,1} {
       \node[font=\scriptsize, TextGray] at (\xx+0.3+0.6*\cc,0.25) {$\lb$};
@@ -318,6 +322,7 @@ Spostandoci di un'altra posizione il centro vale 8 e il vicino a sinistra 2, per
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{sharpen}
 \begin{tikzpicture}[font=\scriptsize]
   \def\csz{0.5}
   % input con sfondo proporzionale al valore
@@ -347,6 +352,7 @@ Spostandoci di un'altra posizione il centro vale 8 e il vicino a sinistra 2, per
   \cellrect[very thick, red!70!black]{(5.8,-0.5)}{\csz}{1}{0}{1}{1}
   \node at (6.55,-0.2) {Output};
 \end{tikzpicture}
+\end{widget}
 \caption{Il kernel di sharpening applicato a un'immagine $5 \times 5$. Il colore delle celle segue il valore (i valori negativi sono resi in bianco, come se fossero 0). In rosso la seconda posizione del kernel e il valore corrispondente dell'output, $-4$: lungo il bordo tra le due zone il contrasto aumenta.}
 \label{fig:sharpen}
 \end{figure}
@@ -373,6 +379,7 @@ Ripetendo il calcolo in tutte le posizioni si ottiene una matrice $3 \times 3$. 
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{conv3d}
 \begin{tikzpicture}[font=\tiny]
   \def\csz{0.4}
   \tikzset{gcell/.style={minimum size=0.4cm, font=\tiny}}
@@ -409,6 +416,7 @@ Ripetendo il calcolo in tutte le posizioni si ottiene una matrice $3 \times 3$. 
   \node[font=\scriptsize, TextGray, align=center] at (4.8,-9.0) {filtri $3 \times 3 \times 3$};
   \node[font=\scriptsize, TextGray, align=center] at (7.5,-5.1) {output\\$3 \times 3 \times 2$};
 \end{tikzpicture}
+\end{widget}
 \caption{Una convoluzione 3D con due filtri e stride 2. A sinistra i tre canali dell'input, già circondati da un bordo di zeri. Al centro i tre canali dei filtri $W_0$ e $W_1$ con i rispettivi bias, a destra le due matrici dell'output, una per filtro. In blu la porzione di input coperta da $W_0$ (in rosso) nella prima posizione, in verde il valore corrispondente $o[0,0,0] = 6$.}
 \label{fig:conv3d}
 \end{figure}
@@ -418,6 +426,7 @@ Applicando un kernel $3 \times 3$ a un'immagine $5 \times 5$, come nell'esempio 
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{conv-params}[W=5, F=3, P=1, S=1, d=1, controls={P}]
 \begin{tikzpicture}[>=Stealth, font=\scriptsize]
   \def\csz{0.375}
   % input con padding P = 1
@@ -437,6 +446,7 @@ Applicando un kernel $3 \times 3$ a un'immagine $5 \times 5$, come nell'esempio 
   \node at (5.1375,0.3) {output $5 \times 5$};
   \draw[->, thick] (2.9,-1.3125) -- (4.0,-1.3125);
 \end{tikzpicture}
+\end{widget}
 \caption{Zero padding (si veda \cite{Dumoulin2016}): un input $5 \times 5$ (in verde petrolio) viene circondato da un bordo di zeri ($P = 1$). Un kernel $3 \times 3$ con passo 1, di cui in rosso è riportata la prima posizione, produce un output $5 \times 5$, della stessa dimensione dell'input.}
 \label{fig:padding}
 \end{figure}
@@ -446,6 +456,7 @@ Lo \textbf{stride} $S$ è il passo con cui il kernel si sposta sull'input. Con $
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{conv-params}[W=7, F=3, P=0, S=2, d=1, controls={S}]
 \begin{tikzpicture}[font=\scriptsize]
   \def\csz{0.375}
   \foreach \yy/\S/\nout in {0/1/5, -3.4/2/3} {
@@ -475,6 +486,7 @@ Lo \textbf{stride} $S$ è il passo con cui il kernel si sposta sull'input. Con $
   \end{scope}
   \node at (1.3125,0.3) {input $7 \times 7$};
 \end{tikzpicture}
+\end{widget}
 \caption{Lo stride, con un kernel $3 \times 3$ su un input $7 \times 7$. In alto, con $S = 1$, la seconda posizione del kernel (in verde) è spostata di una cella rispetto alla prima (in rosso) e l'output è $5 \times 5$. In basso, con $S = 2$, il kernel si sposta di due celle sia in orizzontale (in verde) sia in verticale (in blu), e l'output si riduce a $3 \times 3$. Ogni colore indica la posizione del kernel e il valore dell'output che produce.}
 \label{fig:stride}
 \end{figure}
@@ -490,6 +502,7 @@ Il punto più importante è che le convoluzioni dilatate permettono un'espansion
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{conv-params}[W=7, F=3, P=0, S=1, d=2, controls={d}]
 \begin{tikzpicture}[>=Stealth, font=\scriptsize]
   \def\csz{0.375}
   \fill[Accent!25] (0,0) rectangle (7*\csz,-7*\csz);
@@ -503,6 +516,7 @@ Il punto più importante è che le convoluzioni dilatate permettono un'espansion
   \node at (4.7625,0.3) {output $3 \times 3$};
   \draw[->, thick] (2.9,-1.3125) -- (4.0,-1.3125);
 \end{tikzpicture}
+\end{widget}
 \caption{Convoluzione dilatata (si veda \cite{Dumoulin2016}): un kernel $3 \times 3$ con $d = 2$ applicato a un input $7 \times 7$. Le celle scure sono quelle moltiplicate per i 9 pesi del kernel nella prima posizione, mentre il riquadro tratteggiato è l'area $5 \times 5$ che coprono. Con stride 1 l'output è $3 \times 3$.}
 \label{fig:dilation}
 \end{figure}
@@ -516,7 +530,7 @@ Vediamo ora da dove nasce il risparmio di parametri. In una rete neurale classic
 \end{itemize}
 
 \paragraph{Local receptive field.}
-Ogni neurone di un hidden layer è collegato soltanto a una regione dell'input, detta \textbf{receptive field}, e non a tutta l'immagine. Ogni connessione serve ad apprendere un peso, per cui ogni nodo ha di fatto un proprio filtro. Ad esempio, con un receptive field di $5 \times 5$ ogni neurone ha 25 connessioni (figura~\ref{fig:receptive}, al centro).
+Ogni neurone di un hidden layer è collegato soltanto a una regione dell'input, detta \textbf{receptive field}, e non a tutta l'immagine. Ogni connessione serve ad apprendere un peso, per cui ogni nodo ha di fatto un proprio filtro. Ad esempio, con un receptive field di $3 \times 3$ ogni neurone ha 9 connessioni (figura~\ref{fig:receptive}, al centro).
 
 \paragraph{Shared weights.}
 Una feature può comparire in qualunque punto dell'immagine. Per questo motivo, i neuroni di uno stesso layer \textbf{condividono i pesi}: sono tutti sensibili alla stessa feature (la risposta del filtro), calcolata in posizioni diverse dell'input (figura~\ref{fig:receptive}, a destra). Una mappa di pesi applicata in posizioni diverse è esattamente una convoluzione.
@@ -594,7 +608,7 @@ Applichiamo la formula a una rete reale, \textbf{AlexNet} \cite{Krizhevsky2012},
 \]
 ovvero ogni filtro produce una mappa di $55 \times 55$. Il primo layer ha $96 \cdot 11 \cdot 11 \cdot 3 = 34\,848$ pesi, più 96 bias (uno per filtro), mentre le unità di output sono $55 \cdot 55 \cdot 96 = 290\,400$.
 
-La tabella~\ref{tab:alexnet} riporta gli stessi conti per tutti i layer. Il dato interessante è come si distribuiscono i pesi. I cinque layer convoluzionali hanno circa 2.3 milioni di pesi, meno del 4\% del totale, ma contano il 90\% delle connessioni (e quindi delle operazioni). I tre layer fully connected, al contrario, hanno quasi 59 milioni di pesi: è lì che si concentra la memoria occupata dalla rete.
+La tabella~\ref{tab:alexnet} riporta gli stessi conti per tutti i layer. Il dato interessante è come si distribuiscono i pesi. I cinque layer convoluzionali hanno circa 2.3 milioni di pesi, meno del 4\% del totale, ma contano circa il 92\% delle connessioni (e quindi delle operazioni). I tre layer fully connected, al contrario, hanno quasi 59 milioni di pesi: è lì che si concentra la memoria occupata dalla rete.
 
 \begin{table}[htbp]
 \centering
@@ -604,7 +618,7 @@ La tabella~\ref{tab:alexnet} riporta gli stessi conti per tutti i layer. Il dato
 Layer & Unità & Pesi & Connessioni \\
 \midrule
 $L_1$ (conv) & 290\,400 & 34\,848 & 105\,415\,200 \\
-$L_2$ (conv) & 186\,624 & 307\,200 & 111\,974\,400 \\
+$L_2$ (conv) & 186\,624 & 307\,200 & 223\,948\,800 \\
 $L_3$ (conv) & 64\,896 & 884\,736 & 149\,520\,384 \\
 $L_4$ (conv) & 64\,896 & 663\,552 & 112\,140\,288 \\
 $L_5$ (conv) & 43\,264 & 442\,368 & 74\,760\,192 \\
@@ -612,9 +626,9 @@ $L_6$ (dense) & 4\,096 & 37\,748\,736 & 37\,748\,736 \\
 $L_7$ (dense) & 4\,096 & 16\,777\,216 & 16\,777\,216 \\
 $L_8$ (dense) & 1\,000 & 4\,096\,000 & 4\,096\,000 \\
 \midrule
-Totale conv & 650\,080 & 2\,332\,704 & 553\,810\,464 \\
+Totale conv & 650\,080 & 2\,332\,704 & 665\,784\,864 \\
 Totale dense & 9\,192 & 58\,621\,952 & 58\,621\,952 \\
-Totale & 659\,272 & 60\,954\,656 & 612\,432\,416 \\
+Totale & 659\,272 & 60\,954\,656 & 724\,406\,816 \\
 \bottomrule
 \end{tabular}
 \caption{Unità, pesi e connessioni dei layer di AlexNet \cite{Krizhevsky2012}. I layer \emph{dense} sono i layer fully connected, e i pesi non includono i bias.}
@@ -633,6 +647,7 @@ In una rete fully connected ogni output dipende da tutti gli input. In un layer 
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{sparse}
 \begin{tikzpicture}[>=Stealth, font=\scriptsize,
   unit/.style={draw, circle, minimum size=6mm, inner sep=0pt}]
   % \md = 0: si guarda dal basso (input x_3), \md = 1: dall'alto (output s_3)
@@ -660,6 +675,7 @@ In una rete fully connected ogni output dipende da tutti gli input. In un layer 
   \node[left, align=right] at (-0.45,0.7) {convoluzione\\(kernel 3)};
   \node[left, align=right] at (-0.45,-1.7) {moltiplicazione\\matriciale};
 \end{tikzpicture}
+\end{widget}
 \caption{Sparse connections (da \cite{Goodfellow-et-al-2016}). A sinistra, le unità di output influenzate dall'input $x_3$: con un kernel di larghezza 3 sono solo tre, con la moltiplicazione matriciale sono tutte. A destra, le unità di input che influenzano l'output $s_3$, ovvero il suo receptive field.}
 \label{fig:sparse}
 \end{figure}
@@ -855,12 +871,13 @@ Le CNN hanno anche dei \textbf{pooling layer}. Un pooling layer prende delle reg
 Il pooling si applica a ogni canale in modo indipendente, quindi la profondità dell'output resta la stessa dell'input. Inoltre l'operazione deve essere derivabile, perché la rete va addestrata con la backpropagation (vedremo tra poco come si deriva il massimo).
 
 \paragraph{Max pooling.}
-Vorremmo che le nostre reti fossero invarianti a piccoli spostamenti lungo $x$ e $y$: ad esempio, l'immagine potrebbe non essere perfettamente centrata sull'oggetto. Per ottenere questo si usa di solito il max pooling, che nella forma più semplice sottocampiona la feature map selezionando i massimi locali (figura~\ref{fig:maxpool}). Il max pooling è ispirato alla \textbf{inibizione laterale}: un neurone eccitato può ridurre l'attività dei suoi vicini.
+Vorremmo che le nostre reti fossero invarianti a piccoli spostamenti lungo $x$ e $y$: ad esempio, l'immagine potrebbe non essere perfettamente centrata sull'oggetto. Per ottenere questo si usa di solito il max pooling, che nella forma più semplice sottocampiona la feature map selezionando i massimi locali (figura~\ref{fig:maxpool}). Il max pooling è ispirato all'\textbf{inibizione laterale}: un neurone eccitato può ridurre l'attività dei suoi vicini.
 
 Il pooling può essere \emph{overlapping} oppure \emph{non-overlapping}, a seconda che le regioni si sovrappongano o meno. Un esempio di pooling non-overlapping è il max pooling con filtro $2 \times 2$ e stride 2. Le dimensioni dell'output si calcolano con la stessa formula vista per la convoluzione, senza padding: un input $4 \times 4$ diventa $(4 - 2)/2 + 1 = 2$, ovvero $2 \times 2$.
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{pooling}
 \begin{tikzpicture}[font=\scriptsize, >=Stealth]
   \def\csz{0.6}
   \foreach \cc/\rr/\col in {0/0/ObsColor, 2/0/LemmaColor, 0/2/Accent, 2/2/TextGray} {
@@ -877,6 +894,7 @@ Il pooling può essere \emph{overlapping} oppure \emph{non-overlapping}, a secon
   \node[TextGray] at (1.2,0.3) {feature map $4 \times 4$};
   \node[TextGray] at (4.7,0.3) {output $2 \times 2$};
 \end{tikzpicture}
+\end{widget}
 \caption{Max pooling non-overlapping con filtro $2 \times 2$ e stride 2. Ogni regione colorata dell'input viene sostituita dal suo massimo (in rosso).}
 \label{fig:maxpool}
 \end{figure}
@@ -959,7 +977,7 @@ Per molti task, inoltre, il pooling è indispensabile per gestire \textbf{input 
 \paragraph{Backpropagation nel pooling.}
 Come si deriva il massimo? Ricordiamo la derivata di $f(x, y) = \max(x, y)$:
 \[
-\nabla f = \big[\mathbf{1}\{x \ge y\},\ \mathbf{1}\{y \ge x\}\big].
+\nabla f = \big[\mathbf{1}\{x \ge y\},\ \mathbf{1}\{y > x\}\big].
 \]
 Il gradiente vale 1 per l'input più grande e 0 per l'altro. Nel backward pass, quindi, il max pooling instrada il gradiente solo verso l'input che aveva il valore più grande nel forward pass. Nell'esempio di figura~\ref{fig:maxpool}, il gradiente che arriva sull'output 6 passa tutto alla cella che conteneva il 6, mentre le altre tre celle della regione ricevono 0. Per farlo in modo efficiente, durante il forward pass si salva l'indice del massimo di ogni regione (a volte questi indici sono chiamati \emph{switches}).
 

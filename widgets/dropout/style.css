@@ -1,0 +1,12 @@
+.w-dropout .edge { stroke: var(--ink-soft); stroke-opacity: 0.5; stroke-width: 1; transition: stroke-opacity calc(0.4s / var(--speed, 1)), stroke calc(0.4s / var(--speed, 1)); }
+.w-dropout .edge.off { stroke-opacity: 0.05; }
+.w-dropout .edge.scaled { stroke: var(--accent-soft); stroke-opacity: 0.35; }
+.w-dropout .unit circle, .w-dropout .out { fill: var(--surface); stroke: var(--ink-soft); stroke-width: 1.4; transition: opacity calc(0.4s / var(--speed, 1)), fill calc(0.4s / var(--speed, 1)); }
+.w-dropout .out { fill: color-mix(in oklab, var(--accent-soft) 25%, var(--surface)); }
+.w-dropout .unit .cross { stroke: var(--hot); stroke-width: 2; opacity: 0; transition: opacity calc(0.3s / var(--speed, 1)); }
+.w-dropout .unit.off circle { opacity: 0.35; }
+.w-dropout .unit.off .cross { opacity: 1; }
+.w-dropout.testing .unit circle { fill: color-mix(in oklab, var(--accent-soft) 18%, var(--surface)); }
+.w-dropout .layer { fill: var(--ink-soft); font-family: var(--font-sans); font-size: 11px; }
+.w-dropout .wlabel { fill: var(--accent); font-family: var(--font-sans); font-size: 12px; text-anchor: middle; }
+.w-dropout .dropout-status { min-height: 2.8em; }

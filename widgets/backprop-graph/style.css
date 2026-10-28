@@ -1,0 +1,14 @@
+.w-backprop .edge { stroke: var(--ink-soft); stroke-width: 1.4; transition: stroke calc(0.3s / var(--speed, 1)), stroke-width calc(0.3s / var(--speed, 1)); }
+.w-backprop .edge.lit { stroke: var(--accent); stroke-width: 3; }
+.w-backprop.backward .edge.lit { stroke: var(--hot); }
+.w-backprop .box { fill: var(--surface); stroke: var(--ink-soft); stroke-width: 1.5; transition: fill calc(0.3s / var(--speed, 1)), stroke calc(0.3s / var(--speed, 1)); }
+.w-backprop .bnode.active .box { fill: color-mix(in oklab, var(--accent-soft) 22%, var(--surface)); stroke: var(--accent); stroke-width: 2.5; }
+.w-backprop.backward .bnode.active .box { fill: color-mix(in oklab, var(--hot) 14%, var(--surface)); stroke: var(--hot); }
+.w-backprop .sep { stroke: var(--ink-soft); stroke-width: 1.2; }
+.w-backprop .op { fill: var(--ink); font-family: var(--font-serif); font-size: 20px; text-anchor: middle; dominant-baseline: central; }
+.w-backprop .deriv { fill: var(--accent); font-family: var(--font-mono); font-size: 12px; text-anchor: middle; dominant-baseline: central; }
+.w-backprop .var { fill: var(--ink); font-family: var(--font-serif); font-style: italic; font-size: 17px; text-anchor: middle; dominant-baseline: central; }
+.w-backprop .fwd, .w-backprop .bwd { font-family: var(--font-mono); font-size: 13px; font-weight: 600; text-anchor: middle; }
+.w-backprop .fwd { fill: var(--accent); }
+.w-backprop .bwd { fill: var(--hot); }
+.w-backprop .bwd.result { font-size: 16px; }

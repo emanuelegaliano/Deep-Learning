@@ -160,7 +160,9 @@ Il softmax segue un modello lineare, tuttavia può essere rappresentato come una
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{softmax}[x={0.2, 0.1}, theta={{-1,1,0},{1,0.5,1},{2,1,1.5}}, target=0]
 \includegraphics[width=\textwidth]{images/softmax_neural_network.png}
+\end{widget}
 \caption{Il softmax come rete neurale con due feature e tre classi: dai logit $z_i = w_{i,1}x_1 + w_{i,2}x_2 + b_i$ alle probabilità $a_i = e^{z_i}/\sum_{k=1}^{3}e^{z_k}$, fino alla cross-entropy loss $L = \sum_{j=1}^{3} -y_j\log(a_j)$. Il bias $b_i$ corrisponde al parametro $\vartheta_0^{(i)}$ associato alla feature $x_0 = 1$.}
 \label{fig:softmax-nn}
 \end{figure}
@@ -185,13 +187,13 @@ Classe & Modello lineare $z_k$ & Logit $e^{z_k}$ & Normalizzazione $p_k$ \\
 \midrule
 0 & $-1 + 0.2 + 0 = -0.8$ & $0.45$ & $0.03$ \\
 1 & $1 + 0.1 + 0.1 = 1.2$ & $3.32$ & $0.23$ \\
-2 & $2 + 0.2 + 0.15 = 2.35$ & $10.48$ & $0.74$ \\
+2 & $2 + 0.2 + 0.15 = 2.35$ & $10.49$ & $0.74$ \\
 \midrule
- & & $\sum = 14.25$ & $\sum = 1$ \\
+ & & $\sum = 14.26$ & $\sum = 1$ \\
 \bottomrule
 \end{tabular}
 \end{center}
-Il modello assegna alla classe corretta una probabilità di appena $0.03$, per cui la loss su questo campione è alta: $L = -1\cdot\log(0.03) \approx 3.46$. La loss complessiva si ottiene facendo la media di questi valori su tutti gli $m$ campioni del training set.
+Il modello assegna alla classe corretta una probabilità di appena $0.03$, per cui la loss su questo campione è alta: $L = -1\cdot\log(0.0315) \approx 3.46$. La loss complessiva si ottiene facendo la media di questi valori su tutti gli $m$ campioni del training set.
 
 \begin{figure}[htbp]
 \centering
@@ -216,18 +218,18 @@ L_{\text{hinge}} = \max(0,\ -2.85 - 0.28 + 1) + \max(0,\ 0.86 - 0.28 + 1) = 0 + 
 \]
 Con la cross-entropy, invece, si applicano esponenziale e normalizzazione,
 \[
-e^{f} = [0.058,\ 2.36,\ 1.32]^T \quad\Longrightarrow\quad p = [0.016,\ 0.631,\ 0.353]^T,
+e^{f} = [0.058,\ 2.36,\ 1.32]^T \quad\Longrightarrow\quad p = [0.015,\ 0.631,\ 0.353]^T,
 \]
 e si prende il logaritmo della probabilità della classe corretta: $L_{\text{CE}} = -\log(0.353) \approx 1.04$.
 
 \paragraph{Loss per la classificazione binaria.}
 In generale, la loss complessiva è la somma delle loss sui singoli esempi, $L = \sum_{i=1}^{m}\mathrm{loss}\big(f(x^{(i)}), y^{(i)}\big)$. Nel caso binario, con $y^{(i)} \in \{-1, +1\}$, alcuni esempi sono:
 \begin{itemize}
-    \item \textbf{Zero-one loss}: $\mathbf{1}\{f(x^{(i)}) \neq y^{(i)}\}$, che conta gli errori ma non è né continua né derivabile.
+    \item \textbf{Zero-one loss}: $\mathbf{1}\{\mathrm{sign}(f(x^{(i)})) \neq y^{(i)}\}$, che conta gli errori ma non è né continua né derivabile.
     \item \textbf{Hinge loss}: $\max\big(0,\ 1 - f(x^{(i)})\,y^{(i)}\big)$, usata dalle SVM.
     \item \textbf{Logistic loss}: $\log\big(1 + \exp(-f(x^{(i)})\,y^{(i)})\big)$, usata dalla regressione logistica.
 \end{itemize}
-Allo stesso modo, la regressione lineare usa la \textbf{least squared loss} $\frac{1}{2}(y - z)^2$, mentre le reti neurali per la classificazione usano la cross-entropy. In tutti i casi la funzione di costo da minimizzare con la discesa del gradiente è $J(\vartheta) = \sum_{i=1}^{m} L\big(h_\vartheta(x^{(i)}), y^{(i)}\big)$, e il modello restituisce un valore continuo nella regressione o una classe nella classificazione.
+Allo stesso modo, la regressione lineare usa la \textbf{least squares loss} $\frac{1}{2}(y - z)^2$, mentre le reti neurali per la classificazione usano la cross-entropy. In tutti i casi la funzione di costo da minimizzare con la discesa del gradiente è $J(\vartheta) = \sum_{i=1}^{m} L\big(h_\vartheta(x^{(i)}), y^{(i)}\big)$, e il modello restituisce un valore continuo nella regressione o una classe nella classificazione.
 
 \section{Il ruolo della rappresentazione}
 Un modello lineare come il softmax produce sempre decision boundary lineari: funziona bene quando i dati sono \textbf{linearmente separabili}, ma fallisce quando non lo sono, come nel caso di due classi disposte a cerchi concentrici. Una soluzione nota è quella di trasformare le feature con una funzione $\phi(x)$, ad esempio un kernel, che mappa i dati in uno spazio a dimensione più alta in cui diventano separabili da un iperpiano (figura~\ref{fig:kernel}).
@@ -335,9 +337,9 @@ Softplus & $f(x) = \log(1 + e^{x})$ & $f'(x) = \dfrac{1}{1 + e^{-x}}$ \\
 Il motivo per cui le reti neurali funzionano così bene su problemi non lineari è formalizzato dal seguente risultato.
 
 \begin{teorema}[Approssimazione universale]\label{teo:uat}
-Una rete neurale feedforward\footnote{Per feedforward si intende una rete in cui ogni layer riceve input esclusivamente dal layer precedente e lo trasmette al successivo, senza cicli.} con un solo hidden layer, dotata di un numero finito ma sufficientemente grande di neuroni e di una funzione di attivazione non lineare (ad esempio la sigmoide), è in grado di approssimare qualunque funzione continua $f : K \to \mathbb{R}$ definita su un insieme compatto $K \subset \mathbb{R}^n$ con errore arbitrariamente piccolo, ovvero per ogni $\varepsilon > 0$ esiste una rete che implementa $\hat{f}$ tale che
+Una rete neurale feedforward\footnote{Per feedforward si intende una rete in cui ogni layer riceve input esclusivamente dal layer precedente e lo trasmette al successivo, senza cicli.} con un solo hidden layer, dotata di un numero finito ma sufficientemente grande di neuroni e di una funzione di attivazione non lineare e non polinomiale (ad esempio la sigmoide), è in grado di approssimare qualunque funzione continua $f : C \to \mathbb{R}$ definita su un insieme compatto $C \subset \mathbb{R}^n$ con errore arbitrariamente piccolo, ovvero per ogni $\varepsilon > 0$ esiste una rete che implementa $\hat{f}$ tale che
 \[
-\sup_{x \in K}\big|f(x) - \hat{f}(x)\big| < \varepsilon.
+\sup_{x \in C}\big|f(x) - \hat{f}(x)\big| < \varepsilon.
 \]
 \end{teorema}
 
@@ -364,7 +366,7 @@ Supponiamo di aver definito un'architettura. Durante la fase di \textbf{training
 \paragraph{Funzione di costo.}
 Per la classificazione vogliamo trovare $\hat{\vartheta}$ tale che
 \[
-\hat{\vartheta} = \arg\min_\vartheta J(\vartheta), \qquad J(\vartheta) = -\frac{1}{m}\sum_{i=1}^{m}\sum_{c=1}^{K}\mathbf{1}\{y^{(i)} = c\}\log h_\vartheta^{(c)}(x^{(i)})
+\hat{\vartheta} = \arg\min_\vartheta J(\vartheta), \qquad J(\vartheta) = -\frac{1}{m}\sum_{i=1}^{m}\sum_{c=0}^{K-1}\mathbf{1}\{y^{(i)} = c\}\log h_\vartheta^{(c)}(x^{(i)})
 \]
 ovvero la somma delle cross-entropy di tutti i neuroni di output. Per raggiungere l'obiettivo dobbiamo essere in grado di calcolare in modo efficiente
 \[

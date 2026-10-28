@@ -41,6 +41,7 @@ dove $N_K(x')$ è l'insieme dei $K$ esempi del training set più vicini a $x'$, 
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{knn}[k=3, query={3.0, 1.0}]
 \begin{tikzpicture}[font=\scriptsize,
   c1/.style={draw=Accent, thick, circle, minimum size=2.5mm, inner sep=0pt},
   nuovo/.style={draw, fill=TextGray!30, minimum size=2.8mm, inner sep=0pt}]
@@ -58,6 +59,7 @@ dove $N_K(x')$ è l'insieme dei $K$ esempi del training set più vicini a $x'$, 
   \draw[ObsColor, thick] (4.52,0.52) -- (4.68,0.68) (4.52,0.68) -- (4.68,0.52);
   \node[right] at (4.7,0.6) {classe 2};
 \end{tikzpicture}
+\end{widget}
 \caption{Classificazione K-NN con $K = 3$. I tre vicini del pattern da classificare (dentro il cerchio tratteggiato) appartengono tutti alla classe 1, che è quindi la classe assegnata.}
 \label{fig:knn}
 \end{figure}
@@ -193,7 +195,7 @@ Nel \textbf{deep metric learning} la trasformazione è una rete neurale $L_\vart
 \[
 \tilde{x} \equiv L_\vartheta(x).
 \]
-Sulle rappresentazioni trasformate calcoliamo la distanza $D$, e con questa una funzione di loss. Le coppie $(x^{(1)}, x^{(2)})$ sono etichettate come simili (0) oppure dissimili (1). Nel caso supervised, ad esempio, sono simili due campioni della stessa classe e dissimili due campioni di classi diverse. La distanza $D$ stabilisce l'errore utile per aggiornare i parametri dell'architettura $L_\vartheta$.
+Sulle rappresentazioni trasformate calcoliamo la distanza $D$, e con questa una funzione di loss. Le coppie $(x^{(1)}, x^{(2)})$ sono etichettate come simili (1) oppure dissimili (0). Nel caso supervised, ad esempio, sono simili due campioni della stessa classe e dissimili due campioni di classi diverse. La distanza $D$ stabilisce l'errore utile per aggiornare i parametri dell'architettura $L_\vartheta$.
 
 \begin{figure}[htbp]
 \centering
@@ -356,7 +358,7 @@ dove $p$ è la posizione dell'immagine, $o$ il suo orientamento, mentre $t$ e $g
   \draw[->, thick, Accent] (2.3,0.4) -- ++(60:0.35);
   \draw[Accent] (2.4,0.5) circle (0.22);
   \draw[Accent] (2.4,0.28) -- (2.4,-0.4) node[below, draw, fill=white] {IMG};
-  \node[right, align=left] at (4.5,1.3) {$p$: posizione e orientamento\\di un'immagine IMG\\acquisita in quel punto};
+  \node[right, align=left] at (4.5,1.3) {$p$, $o$: posizione e orientamento\\di un'immagine IMG\\acquisita in quel punto};
   % relabeling
   \begin{scope}[shift={(8.2,0.3)}]
     \draw (0,0) rectangle (2.6,2.0);
@@ -437,12 +439,13 @@ sono le distanze (al quadrato) dell'ancora dal positivo e dal negativo.
 
 Anche qui ci sono due casi:
 \begin{itemize}
-    \item \textbf{Caso 1}: $D_P - D_N + \alpha < 0$, ovvero $D_P + \alpha < D_N$. La distanza tra i dissimili è già maggiore della distanza tra i simili più il margine. Il massimo vale 0, e non è necessario aggiornare i pesi.
-    \item \textbf{Caso 2}: $D_P - D_N + \alpha \ge 0$, ovvero $D_P + \alpha \ge D_N$. Il negativo è troppo vicino all'ancora, e vogliamo che venga allontanato con un errore pari a $D_P - D_N + \alpha$ (figura~\ref{fig:triplet}).
+    \item \textbf{Caso 1}: $D_P - D_N + \alpha \le 0$, ovvero $D_P + \alpha \le D_N$. La distanza tra i dissimili è già maggiore della distanza tra i simili più il margine. Il massimo vale 0, e non è necessario aggiornare i pesi.
+    \item \textbf{Caso 2}: $D_P - D_N + \alpha > 0$, ovvero $D_P + \alpha > D_N$. Il negativo è troppo vicino all'ancora, e vogliamo che venga allontanato con un errore pari a $D_P - D_N + \alpha$ (figura~\ref{fig:triplet}).
 \end{itemize}
 
 \begin{figure}[htbp]
 \centering
+\begin{widget}{triplet}[alpha=0.5]
 \begin{tikzpicture}[>=Stealth, font=\scriptsize,
   ancora/.style={draw, circle, thick, minimum size=3mm, inner sep=0pt},
   simile/.style={draw=LemmaColor, fill=LemmaColor!30, star, star points=5, star point ratio=2.25, minimum size=3.5mm, inner sep=0pt},
@@ -461,6 +464,7 @@ Anche qui ci sono due casi:
     \draw[dotted, thick, LemmaColor] (a2) -- (p2);
   \end{scope}
 \end{tikzpicture}
+\end{widget}
 \caption{Il caso 2 della triplet loss. A sinistra il negativo N è più vicino all'ancora A del positivo P. Vorremmo invece che il positivo fosse vicino all'ancora e il negativo lontano, almeno di un margine $\alpha$ in più.}
 \label{fig:triplet}
 \end{figure}
@@ -483,10 +487,10 @@ dove $\alpha_1$ e $\alpha_2$ sono due margini. Il primo termine chiede che $x^{(
 \centering
 \begin{tikzpicture}[font=\scriptsize]
   \foreach \rad in {1.2, 2.0, 2.8} \draw[TextGray] (-80:\rad) arc (-80:0:\rad);
-  \node[label=above left:{$x^{(1)}$}] (a) at (0,0) {$\times$};
-  \node[label=right:{$x^{(2)}$}] (b) at (-42:1.2) {$\times$};
-  \node[label=right:{$x^{(4)}$}] (d) at (-42:2.0) {$\times$};
-  \node[label=right:{$x^{(3)}$}] (c) at (-42:2.8) {$\times$};
+  \node[inner sep=0pt, label=above left:{$x^{(1)}$}] (a) at (0,0) {$\times$};
+  \node[inner sep=0pt, label=right:{$x^{(2)}$}] (b) at (-42:1.2) {$\times$};
+  \node[inner sep=0pt, label=right:{$x^{(4)}$}] (d) at (-42:2.0) {$\times$};
+  \node[inner sep=0pt, label=right:{$x^{(3)}$}] (c) at (-42:2.8) {$\times$};
   \draw (a) -- (b);
   \draw[dotted, thick] (b) -- (d) -- (c);
   \draw[<->, shorten <=1pt, shorten >=1pt] (-15:1.2) -- (-15:2.0) node[midway, above] {$\alpha_1$};
@@ -509,7 +513,7 @@ Abbiamo capito che il deep metric learning si ``riduce'' alla scelta di un'archi
 
 Ricordiamo la softmax loss (sezione~\ref{sec:softmax}), scritta con la notazione del paper sulla center loss \cite{Wen2016}:
 \[
-\mathrm{loss}_{\mathrm{softmax}} = -\frac{1}{N}\sum_{i=1}^{N} \log \frac{e^{W_{y_i}^T z_i + b_{y_i}}}{\sum_{j=1}^{K} e^{W_j^T z_i + b_j}}
+\mathrm{loss}_{\mathrm{softmax}} = -\sum_{i=1}^{N} \log \frac{e^{W_{y_i}^T z_i + b_{y_i}}}{\sum_{j=1}^{K} e^{W_j^T z_i + b_j}}
 \]
 dove $N$ è il numero di campioni (ad esempio di un mini-batch), $K$ il numero di classi e $z_i = L_\vartheta(x_i)$ la feature del campione $i$. $W_j$ e $b_j$ sono invece i pesi e il bias del layer softmax per la classe $j$.
 
@@ -555,7 +559,7 @@ Possiamo però modificare la softmax loss per renderla più adatta al metric lea
 \begin{definizione}[Center loss]
 La center loss è definita come:
 \[
-\mathrm{loss}_{\mathrm{center}} = \mathrm{loss}_{\mathrm{softmax}} + \frac{\lambda}{2}\sum_{i=1}^{N} \big\|z_i - c_{y_i}\big\|_2^2
+\mathrm{loss} = \mathrm{loss}_{\mathrm{softmax}} + \lambda\,\mathrm{loss}_{\mathrm{center}}, \qquad \mathrm{loss}_{\mathrm{center}} = \frac{1}{2}\sum_{i=1}^{N} \big\|z_i - c_{y_i}\big\|_2^2
 \]
 dove $z_i \equiv L_\vartheta(x_i)$, $c_j$ è il prototipo (o centro) della classe $j$ nello spazio delle feature, e $\lambda$ bilancia i due termini.
 \end{definizione}

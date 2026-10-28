@@ -1,0 +1,13 @@
+/* sparse connections */
+.w-sparse .edge { stroke: var(--ink-soft); stroke-opacity: 0.14; stroke-width: 1.2; transition: stroke-opacity calc(0.25s / var(--speed, 1)); }
+.w-sparse .edge.on { stroke: var(--ink); stroke-opacity: 0.85; stroke-width: 1.8; }
+.w-sparse .edge.shared { stroke-opacity: 0.35; stroke-width: 2; }
+.w-sparse .edge.shared.on { stroke-opacity: 1; stroke-width: 2.6; }
+.w-sparse .unit { cursor: pointer; outline: none; }
+.w-sparse .unit circle { fill: var(--surface); stroke: var(--ink-soft); stroke-width: 1.4; transition: fill calc(0.25s / var(--speed, 1)); }
+.w-sparse .unit.lit circle { fill: color-mix(in oklab, var(--accent-soft) 30%, var(--surface)); stroke: var(--accent); }
+.w-sparse .unit.sel circle { fill: var(--accent); stroke: var(--accent); }
+.w-sparse .unit.sel .unit-text { fill: var(--bg); }
+.w-sparse .unit:focus-visible circle { stroke-width: 3; }
+.w-sparse .unit-text { fill: var(--ink); text-anchor: middle; dominant-baseline: central; font-family: var(--font-serif); font-style: italic; font-size: 15px; pointer-events: none; }
+

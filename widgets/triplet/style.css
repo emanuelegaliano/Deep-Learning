@@ -1,0 +1,12 @@
+.w-triplet .fig-svg { touch-action: none; }
+.w-triplet .ring { fill: color-mix(in oklab, var(--hot) 6%, transparent); stroke: var(--hot); stroke-dasharray: 6 4; stroke-width: 1.5; transition: stroke calc(0.3s / var(--speed, 1)); }
+.w-triplet.solved .ring { stroke: var(--lemma); fill: color-mix(in oklab, var(--lemma) 6%, transparent); }
+.w-triplet .dp { stroke: var(--lemma); stroke-width: 2.5; stroke-dasharray: 2 4; stroke-linecap: round; }
+.w-triplet .dn { stroke: var(--hot); stroke-width: 2; stroke-dasharray: 7 4; }
+.w-triplet .pt { cursor: grab; }
+.w-triplet .pt circle { stroke-width: 2; }
+.w-triplet .pt.a circle { fill: var(--surface); stroke: var(--ink); }
+.w-triplet .pt.p circle { fill: color-mix(in oklab, var(--lemma) 35%, var(--surface)); stroke: var(--lemma); }
+.w-triplet .pt.n circle { fill: color-mix(in oklab, var(--hot) 25%, var(--surface)); stroke: var(--hot); }
+.w-triplet .pt-label { fill: var(--ink); font-family: var(--font-sans); font-size: 11px; font-weight: 600; pointer-events: none; }
+.w-triplet .triplet-alpha { grid-template-columns: 5.5rem 9rem 2.5rem; }

@@ -1,0 +1,17 @@
+/* pooling: le quattro regioni come nella figura del PDF */
+.w-pooling .g-pool .cell { stroke-opacity: 0.4; }
+.w-pooling .g-pool .cell.r0 { fill: color-mix(in oklab, var(--obs) 20%, var(--surface)); }
+.w-pooling .g-pool .cell.r1 { fill: color-mix(in oklab, var(--lemma) 20%, var(--surface)); }
+.w-pooling .g-pool .cell.r2 { fill: color-mix(in oklab, var(--accent-soft) 20%, var(--surface)); }
+.w-pooling .g-pool .cell.r3 { fill: color-mix(in oklab, var(--ink-soft) 15%, var(--surface)); }
+.w-pooling .g-pool .cell.cur { stroke: var(--ink); stroke-width: 2; stroke-opacity: 1; }
+.w-pooling .g-pool .cell.pick, .w-pooling .g-pool .cell.grad { stroke: var(--hot); stroke-width: 3; stroke-opacity: 1; }
+.w-pooling .g-pool .cell.r0.cur, .w-pooling .g-pool .cell.r0.grad { fill: color-mix(in oklab, var(--obs) 42%, var(--surface)); }
+.w-pooling .g-pool .cell.r1.cur, .w-pooling .g-pool .cell.r1.grad { fill: color-mix(in oklab, var(--lemma) 42%, var(--surface)); }
+.w-pooling .g-pool .cell.r2.cur, .w-pooling .g-pool .cell.r2.grad { fill: color-mix(in oklab, var(--accent-soft) 42%, var(--surface)); }
+.w-pooling .g-pool .cell.r3.cur, .w-pooling .g-pool .cell.r3.grad { fill: color-mix(in oklab, var(--ink-soft) 35%, var(--surface)); }
+.w-pooling .flyer {
+  fill: var(--hot); font-family: var(--font-serif); font-weight: 700; text-anchor: middle; dominant-baseline: central;
+  transition: transform calc(0.8s / var(--speed, 1)) cubic-bezier(0.5, 0, 0.3, 1), opacity calc(0.8s / var(--speed, 1)) ease-in; pointer-events: none;
+}
+

@@ -1,0 +1,13 @@
+.w-knn .fig-svg { cursor: crosshair; touch-action: none; }
+.w-knn .regions { opacity: 0.18; image-rendering: pixelated; }
+.w-knn .c1 { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+.w-knn .c2 { stroke: var(--obs); stroke-width: 2.5; fill: none; }
+.w-knn .c2.outlier { stroke: var(--hot); stroke-width: 3; }
+.w-knn .query { fill: var(--ink-soft); stroke: var(--ink); stroke-width: 1.5; cursor: grab; }
+.w-knn .query.cls-1 { fill: color-mix(in oklab, var(--accent-soft) 60%, var(--surface)); }
+.w-knn .query.cls-2 { fill: color-mix(in oklab, var(--obs) 60%, var(--surface)); }
+.w-knn .ring { fill: none; stroke: var(--ink-soft); stroke-dasharray: 5 4; transition: r calc(0.25s / var(--speed, 1)); }
+.w-knn .link { stroke-width: 1.5; stroke-dasharray: 3 3; }
+.w-knn .link.c1 { stroke: var(--accent); }
+.w-knn .link.c2 { stroke: var(--obs); }
+.w-knn .knn-k { grid-template-columns: 1.5rem 9rem 1.5rem; }
