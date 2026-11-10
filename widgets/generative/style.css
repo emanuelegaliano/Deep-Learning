@@ -1,0 +1,42 @@
+.w-gen .controls [hidden], .w-gen .widget-note[hidden] { display: none; }
+.w-gen .seg-btn .f { font-family: var(--font-serif); font-style: italic; margin-left: 0.4em; }
+.w-gen .sw { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 2px; margin-right: 0.35em; vertical-align: -0.05em; }
+.w-gen .sw.k0 { background: var(--c3); }
+.w-gen .sw.k1 { background: var(--c4); }
+.w-gen .sw.k2 { background: var(--c5); }
+.w-gen .legend { display: inline-flex; gap: 0.9rem; font-size: 0.88rem; color: var(--ink-soft); }
+
+.w-gen .gl { stroke: var(--rule); stroke-dasharray: 2 4; }
+.w-gen .axis { stroke: var(--ink); stroke-width: 1.5; }
+.w-gen .tick { fill: var(--ink-soft); font-family: var(--font-mono); font-size: 10px; text-anchor: end; dominant-baseline: central; }
+
+/* le barre sono rettangoli unitari spostati e scalati: così CSS anima anche il passaggio da un modo all'altro */
+.w-gen .bar {
+  fill: var(--accent-soft);
+  transition: transform calc(0.55s / var(--speed, 1)) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity calc(0.35s / var(--speed, 1)), fill calc(0.35s / var(--speed, 1));
+}
+.w-gen.m-dis .bar.k0, .w-gen.m-con.y0 .bar { fill: var(--c3); }
+.w-gen.m-dis .bar.k1, .w-gen.m-con.y1 .bar { fill: var(--c4); }
+.w-gen.m-dis .bar.k2, .w-gen.m-con.y2 .bar { fill: var(--c5); }
+.w-gen .val {
+  fill: var(--ink); font-family: var(--font-mono); font-size: 12px; text-anchor: middle; pointer-events: none;
+  transition: transform calc(0.55s / var(--speed, 1)) cubic-bezier(0.4, 0, 0.2, 1), opacity calc(0.35s / var(--speed, 1));
+}
+.w-gen.m-dis .val { font-size: 10px; }
+.w-gen:not(.m-dis) :is(.bar, .val):is(.k0, .k2) { opacity: 0; }
+.w-gen.live :is(.bar, .val) { transition-duration: calc(0.06s / var(--speed, 1)); }
+
+.w-gen .br { fill: none; stroke: var(--ink-soft); stroke-width: 1.2; }
+.w-gen .br-t { fill: var(--ink-soft); font-family: var(--font-serif); font-style: italic; font-size: 13px; text-anchor: middle; }
+.w-gen .br-t .subx { font-size: 10px; }
+.w-gen .brs { transition: opacity calc(0.35s / var(--speed, 1)); }
+.w-gen.m-dis .brs.all, .w-gen:not(.m-dis) .brs.dis { opacity: 0; }
+
+.w-gen .hit { fill: transparent; cursor: ns-resize; touch-action: none; outline: none; }
+.w-gen .hit:focus-visible { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
+
+.w-gen .frame { fill: none; stroke: var(--rule); stroke-width: 1; }
+.w-gen .thumb.sel .frame { stroke: var(--accent); stroke-width: 3; }
+.w-gen.m-dis .thumb { cursor: pointer; }
+.w-gen .name { fill: var(--ink-soft); font-family: var(--font-serif); font-style: italic; font-size: 13px; text-anchor: middle; }

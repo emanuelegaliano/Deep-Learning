@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["../texweb/bin/texweb.js", "dev", "."],
+      "port": 5180
+    }
+  ]
+}

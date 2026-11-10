@@ -1,0 +1,21 @@
+.w-ae .head { fill: var(--ink-soft); font-family: var(--font-serif); font-style: italic; font-size: 14px; text-anchor: middle; }
+.w-ae .foot { fill: var(--ink-soft); font-family: var(--font-sans); font-size: 12px; text-anchor: middle; }
+.w-ae .px rect { stroke: none; transition: fill calc(0.35s / var(--speed, 1)) ease; }
+.w-ae .px .px-frame { fill: none; stroke: var(--rule); stroke-width: 1; }
+.w-ae .trap { fill: color-mix(in oklab, var(--accent-soft) 14%, var(--surface)); stroke: var(--accent-soft); stroke-width: 1.2; }
+.w-ae .trap-t { fill: var(--accent); font-family: var(--font-serif); font-style: italic; font-size: 18px; text-anchor: middle; dominant-baseline: central; }
+.w-ae .zero { stroke: var(--rule); stroke-width: 1; }
+/* le barre sono rettangoli unitari spostati e scalati: CSS anima anche il cambio di k */
+.w-ae .bar {
+  fill: var(--accent-soft);
+  transition: transform calc(0.4s / var(--speed, 1)) cubic-bezier(0.4, 0, 0.2, 1), opacity calc(0.3s / var(--speed, 1)), fill calc(0.3s / var(--speed, 1));
+}
+.w-ae .bar.neg { fill: var(--hot); }
+.w-ae .hit { fill: transparent; cursor: crosshair; touch-action: none; }
+
+.w-ae .strip { margin-top: 0.4rem; }
+.w-ae .sum-t { fill: var(--ink); font-family: var(--font-mono); font-size: 11px; text-anchor: end; dominant-baseline: central; }
+.w-ae .sum-t.lead { font-family: var(--font-serif); font-style: italic; font-size: 16px; text-anchor: start; }
+.w-ae .sum-l { fill: var(--ink-soft); font-family: var(--font-serif); font-style: italic; font-size: 12px; text-anchor: middle; }
+.w-ae .term { transition: opacity calc(0.3s / var(--speed, 1)); }
+.w-ae .ae-k { grid-template-columns: 6.5rem 10rem 2rem; }

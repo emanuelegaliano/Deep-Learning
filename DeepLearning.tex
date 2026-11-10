@@ -63,6 +63,28 @@
 \newcommand{\emptygrid}[5][]{%
   \draw[shift={#2}, step=#3cm, #1] (0,0) grid ({#4*#3},{-#5*#3});%
 }
+
+% immagini 8x8 per gli autoencoder (capitolo sui modelli generativi), (x,y) è lo spigolo in alto a sinistra
+% \pixgrid{(x,y)}{lato}{v1,...,v64}: scala di grigi, intensità da 0 a 100
+% \signgrid{(x,y)}{lato}{v1,...,v64}: valori con segno da -100 a 100, nei colori aePos e aeNeg definiti nella figura
+\newcommand{\pixgrid}[3]{%
+  \foreach \pxv [count=\pxi from 0] in {#3} {%
+    \pgfmathtruncatemacro\pxr{floor(\pxi/8)}%
+    \pgfmathtruncatemacro\pxc{\pxi-8*\pxr}%
+    \fill[black!\pxv] ($#1 + ({\pxc*#2},{-\pxr*#2})$) rectangle ++(#2,-#2);%
+  }%
+  \draw[RuleGray] #1 rectangle ++({8*#2},{-8*#2});%
+}
+\newcommand{\signgrid}[3]{%
+  \foreach \pxv [count=\pxi from 0] in {#3} {%
+    \pgfmathtruncatemacro\pxr{floor(\pxi/8)}%
+    \pgfmathtruncatemacro\pxc{\pxi-8*\pxr}%
+    \pgfmathtruncatemacro\pxa{abs(\pxv)}%
+    \ifnum\pxv<0 \def\pxcol{aeNeg}\else \def\pxcol{aePos}\fi
+    \fill[\pxcol!\pxa] ($#1 + ({\pxc*#2},{-\pxr*#2})$) rectangle ++(#2,-#2);%
+  }%
+  \draw[RuleGray] #1 rectangle ++({8*#2},{-8*#2});%
+}
 \usepackage{subcaption}
 
 % figure interattive della versione web (texweb): nel PDF si stampa la figura statica
@@ -381,6 +403,7 @@ Versione: \today
 \input{chapters/cnn}
 \input{chapters/addestramento-cnn}
 \input{chapters/metric-learning}
+\input{chapters/generative_models}
 
 % =====================================================
 % BIBLIOGRAPHY

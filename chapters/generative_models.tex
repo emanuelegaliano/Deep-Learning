@@ -1,0 +1,489 @@
+\chapter{Modelli Generativi}\label{chap:generative_models}
+\emph{TODO: scrivere introduzione al capitolo}
+
+\section{Supervised vs Unsupervised Learning}\label{sec:supervised_vs_unsupervised}
+Esistono diversi modi di allenare un modello di ML/DL ma alla base di tutti i metodi di allenamento ci sono i dati. Spesso troviamo i dati in varie forme e i dataset possono essere di diversissima qualità. Ipotizziamo di avere un dataset di immagini di gatti e di cani, e vogliamo allenare un modello per distinguere tra le due classi. La prima ipotesi che uno si può fare è: alleniamo un modello di classificazione che fa un'ipotesi sulla classe di appartenenza dell'immagine, ovvero l'\textbf{etichetta}. Questo è un esempio di \textbf{supervised learning}, in cui il dataset contiene le immagini e le etichette corrispondenti e possiamo descrivere questo modello, dati i dati $X$ e le etichette $Y$, come un modello che approssima la distribuzione condizionata
+\[
+    P(Y \mid X)
+\]
+In questo caso, la categoria di modelli viene chiamata \textbf{Discriminativi} ed impara a predire l'etichetta $Y$ data l'immagine $X$. In generale, il supervised learning è utile quando abbiamo un dataset etichettato, ovvero quando abbiamo a disposizione le etichette per ogni dato di input. Tuttavia, in molti casi non abbiamo dataset etichettati, o le etichette si possono ottenere ma sono lunghe e costose. Da questo è nato il concetto di \textbf{unsupervised learning}, in cui il dataset contiene solo i dati $X$ che formano una certa distribuzione di probabilità. Esistono diverse categorie di modelli di unsupervised learning:
+\begin{description}
+    \item[Clustering] In questo caso, il modello cerca di raggruppare i dati in base a delle caratteristiche simili per formare delle "etichette" in modo automatico (non supervisionato). Un esempio di clustering è il K-means, che raggruppa i dati in $K$ cluster in base alla distanza tra i punti.
+    \item[Dimensionality Reduction] Qui il modello cerca di ridurre la dimensionalità dei dati, mantenendo le caratteristiche più importanti. Un esempio di dimensionality reduction è il PCA (Principal Component Analysis), che cerca di trovare le componenti principali dei dati e proiettarli in uno spazio a bassa dimensionalità.
+    \item[Feature Learning] Questa è una variante interessante di unsupervised learning, dove il modello non cerca di imparare a predire un'etichetta o a raggruppare i dati, ma cerca di imparare delle rappresentazioni dei dati che possano essere utili per altri compiti. Un esempio di feature learning è l'autoencoder, che cerca di comprimere i dati in una rappresentazione più compatta e poi ricostruirli.
+    \item[Density Estimation] In questo caso, il modello cerca di stimare la distribuzione di probabilità dei dati. Un esempio di density estimation è il GMM (Gaussian Mixture Model), che cerca di modellare la distribuzione dei dati come una combinazione di distribuzioni gaussiane.
+\end{description}
+
+Un esempio che verrà studiato in questo capitolo sono i \textbf{modelli generativi}. A differenza dei modelli discriminativi non apprendo l'etichetta a partire dai dati, ma cercano di "imitare" la distribuzione dei dati stessi. In altre parole, un modello generativo cerca di imparare la distribuzione di probabilità dei dati
+\[
+    P(X)
+\]
+
+Riprendendo l'esempio dei gatti e dei cani, un modello generativo cerca di imparare la distribuzione delle immagini di gatti e cani e ogni immagine compete tra loro all'interno della distribuzione $P(x)$. In altre parole, poiché il modello deve imitare una distribuzione e quindi deve valere $\int_x P(x) dx = 1$, non può assegnare più probabilità a un'immagine irrealistica, perché questo significherebbe che la probabilità delle immagini realistiche sarebbe più bassa.
+
+Esiste inoltre un'altra categoria di modelli generativi, chiamati \textbf{modelli generativi condizionati}, che cercano di imparare la distribuzione condizionata dei dati rispetto a un'etichetta, ovvero
+\[
+    P(X \mid Y)
+\]
+
+\subsection{Regola di Bayes applicata ai modelli generativi}\label{sec:bayes}
+La regola di Bayes è un teorema fondamentale della probabilità che permette di calcolare la probabilità condizionata di un evento dato un altro evento. In particolare, la regola di Bayes afferma che:
+\[
+    P(x \mid y) = \frac{P(y \mid x) P(x)}{P(y)}
+\]
+Nei modelli generativi la regola di Bayes viene usata per classificare: si modellano la likelihood $P(x \mid y)$ e la prior $P(y)$, e da queste si ricava la posterior $P(y \mid x)$ \cite{Furnari-FAD-generative}. Nei modelli generativi possiamo leggere la stessa formula al contrario, perché a destra compaiono le distribuzioni viste finora (figura~\ref{fig:generative-competition}). In particolare, $P(y \mid x)$ è un modello discriminativo, $P(x)$ è un modello generativo e $P(y)$ è la prior, che si stima contando quante volte compare ogni etichetta nel dataset. L'equazione mostra che è possibile derivare la capacità di generare campioni appartenenti a una specifica classe, ovvero $P(x \mid y)$, combinando la conoscenza su come classificare i dati con la conoscenza della struttura dei dati stessi. Il problema, quindi, sta nel riuscire a modellare efficacemente i componenti necessari.
+
+La Figura \ref{fig:generative-competition} mostra come la massa di probabilità compete nei tre tipi di modelli, con lo spazio delle immagini ridotto per semplicità a quattro immagini. Nel modello discriminativo competono le etichette di ogni immagine: le tre barre di un'immagine sommano a 1, anche per il rumore. Nel modello generativo competono tutte le immagini. Nel modello generativo condizionato, fissata l'etichetta $Y = \text{cane}$, competono di nuovo tutte le immagini, e le probabilità si ricavano dalle altre due con il teorema di Bayes.
+
+\begin{figure}[htbp]
+\centering
+\begin{widget}{generative}[px={0.31, 0.43, 0.23, 0.03}, pyx={{0.85,0.10,0.05},{0.07,0.90,0.03},{0.10,0.15,0.75},{0.40,0.25,0.35}}, y=cane]
+\begin{tikzpicture}[font=\scriptsize]
+  % colori delle miniature e delle etichette (gli stessi del widget)
+  \definecolor{gmSky}{HTML}{BCD9EC}\definecolor{gmGrass}{HTML}{6F9A3C}
+  \definecolor{gmCat}{HTML}{B9B9B9}\definecolor{gmCatEar}{HTML}{8C8C8C}
+  \definecolor{gmWhite}{HTML}{F4F4F4}\definecolor{gmEye}{HTML}{2B2B2B}\definecolor{gmPink}{HTML}{E48A9A}
+  \definecolor{gmLeaves}{HTML}{7B4A24}\definecolor{gmLeafA}{HTML}{B5651D}\definecolor{gmLeafB}{HTML}{D08A2E}
+  \definecolor{gmDogEar}{HTML}{C07A22}\definecolor{gmDog}{HTML}{F2E3C4}\definecolor{gmTongue}{HTML}{E07A8F}
+  \definecolor{gmRock}{HTML}{77756F}\definecolor{gmRockA}{HTML}{8A8882}\definecolor{gmRockB}{HTML}{67655F}
+  \definecolor{gmFur}{HTML}{9A6A3C}\definecolor{gmFace}{HTML}{D8A878}\definecolor{gmDark}{HTML}{5A3A1F}
+  \definecolor{gmTeal}{HTML}{5FB3B9}\colorlet{gmGen}{Accent!70!gmTeal}
+  \definecolor{gmY0}{HTML}{1F4FA0}\colorlet{gmY1}{ObsColor}\colorlet{gmY2}{FigColor}
+  % miniature, disegnate in un quadrato di lato 1
+  \tikzset{
+    pics/gatto/.style={code={
+      \fill[gmSky] (0,0.42) rectangle (1,1); \fill[gmGrass] (0,0) rectangle (1,0.42);
+      \fill[gmCatEar] (0.30,0.60) -- (0.32,0.86) -- (0.47,0.70) -- cycle (0.70,0.60) -- (0.68,0.86) -- (0.53,0.70) -- cycle;
+      \fill[gmCat] (0.5,0.52) circle (0.22);
+      \fill[gmWhite] (0.5,0.44) ellipse [x radius=0.11, y radius=0.08];
+      \fill[gmEye] (0.42,0.56) circle (0.028) (0.58,0.56) circle (0.028);
+      \fill[gmPink] (0.47,0.48) -- (0.53,0.48) -- (0.5,0.45) -- cycle;
+      \draw[gmWhite, line width=0.2pt] (0.40,0.45) -- (0.20,0.48) (0.40,0.43) -- (0.20,0.41) (0.60,0.45) -- (0.80,0.48) (0.60,0.43) -- (0.80,0.41);
+    }},
+    pics/cane/.style={code={
+      \fill[gmLeaves] (0,0) rectangle (1,1);
+      \fill[gmLeafA] (0.12,0.85) circle (0.06) (0.88,0.80) circle (0.06) (0.5,0.92) circle (0.06) (0.93,0.48) circle (0.06);
+      \fill[gmLeafB] (0.85,0.15) circle (0.06) (0.15,0.18) circle (0.06) (0.07,0.5) circle (0.06);
+      \fill[gmDogEar] (0.29,0.52) ellipse [x radius=0.08, y radius=0.17] (0.71,0.52) ellipse [x radius=0.08, y radius=0.17];
+      \fill[gmDog] (0.5,0.56) circle (0.21);
+      \fill[white] (0.5,0.43) ellipse [x radius=0.12, y radius=0.09];
+      \fill[gmTongue] (0.5,0.36) ellipse [x radius=0.045, y radius=0.05];
+      \fill[gmEye] (0.5,0.48) ellipse [x radius=0.045, y radius=0.03] (0.42,0.61) circle (0.028) (0.58,0.61) circle (0.028);
+    }},
+    pics/scimmia/.style={code={
+      \fill[gmRock] (0,0) rectangle (1,1);
+      \begin{scope}
+        \clip (0,0) rectangle (1,1);
+        \fill[gmRockA] (0.15,0.8) circle (0.2); \fill[gmRockB] (0.85,0.25) circle (0.22);
+      \end{scope}
+      \fill[gmFur] (0.27,0.56) circle (0.07) (0.73,0.56) circle (0.07) (0.5,0.56) circle (0.22);
+      \fill[gmFace] (0.27,0.56) circle (0.04) (0.73,0.56) circle (0.04);
+      \fill[gmFace] (0.43,0.58) circle (0.085) (0.57,0.58) circle (0.085) (0.5,0.45) ellipse [x radius=0.13, y radius=0.1];
+      \fill[gmEye] (0.43,0.58) circle (0.025) (0.57,0.58) circle (0.025);
+      \fill[gmDark] (0.48,0.47) circle (0.012) (0.52,0.47) circle (0.012);
+      \draw[gmDark, line width=0.2pt] (0.45,0.41) -- (0.55,0.41);
+    }},
+    pics/rumore/.style={code={
+      \pgfmathsetseed{11}
+      \foreach \r in {0,...,5} \foreach \q in {0,...,5} {
+        \pgfmathsetmacro\hh{rnd}
+        \definecolor{gmHsb}{hsb}{\hh,0.85,0.95}\colorlet{gmTmp}[rgb]{gmHsb}
+        \fill[gmTmp] ({\q/6},{\r/6}) rectangle ++({1/6},{1/6});
+      }
+    }},
+  }
+  % parti comuni ai tre pannelli: griglia, asse e miniature
+  \foreach \px in {0, 5.1, 10.2} {
+    \begin{scope}[xshift=\px cm]
+      \draw[RuleGray, densely dotted] (0,1.2) -- (4.25,1.2) (0,2.4) -- (4.25,2.4);
+      \draw[thick] (0,0) -- (4.25,0);
+      \foreach \i/\img in {0/gatto, 1/cane, 2/scimmia, 3/rumore} {
+        \pic[scale=0.8] at ({0.15+1.05*\i},-0.95) {\img};
+        \draw[RuleGray] ({0.15+1.05*\i},-0.95) rectangle ++(0.8,0.8);
+        \node[TextGray, font=\tiny\itshape, anchor=base] at ({0.55+1.05*\i},-1.2) {\img};
+      }
+    \end{scope}
+  }
+  \foreach \y/\t in {0/0, 1.2/0.5, 2.4/1} \node[left, TextGray, font=\tiny] at (0,\y) {\t};
+  % discriminativo: per ogni immagine le tre etichette sommano a 1
+  \foreach \i/\a/\b/\c in {0/0.85/0.10/0.05, 1/0.07/0.90/0.03, 2/0.10/0.15/0.75, 3/0.40/0.25/0.35} {
+    \pgfmathsetmacro\cx{0.55+1.05*\i}
+    \fill[gmY0] ({\cx-0.40},0) rectangle ++(0.24,{2.4*\a});
+    \fill[gmY1] ({\cx-0.12},0) rectangle ++(0.24,{2.4*\b});
+    \fill[gmY2] ({\cx+0.16},0) rectangle ++(0.24,{2.4*\c});
+    \draw[TextGray] ({\cx-0.42},2.62) -- ++(0,0.1) -- ++(0.84,0) -- ++(0,-0.1);
+    \node[TextGray, font=\tiny] at (\cx,2.9) {$\Sigma = 1$};
+  }
+  \node[align=center] at (2.125,3.5) {\textbf{discriminativo}\\$P(Y \mid X)$};
+  % generativo: tutte le immagini sommano a 1
+  \begin{scope}[xshift=5.1cm]
+    \foreach \i/\v in {0/0.31, 1/0.43, 2/0.23, 3/0.03} {
+      \pgfmathsetmacro\cx{0.55+1.05*\i}
+      \fill[gmGen] ({\cx-0.25},0) rectangle ++(0.5,{2.4*\v});
+      \node[above, font=\tiny] at (\cx,{2.4*\v}) {\v};
+    }
+    \draw[TextGray] (0.13,2.62) -- ++(0,0.1) -- (4.12,2.72) -- ++(0,-0.1);
+    \node[TextGray, font=\tiny] at (2.125,2.92) {$\sum_x P(x) = 1$};
+    \node[align=center] at (2.125,3.5) {\textbf{generativo}\\$P(X)$};
+  \end{scope}
+  % condizionato: fissato Y = cane, di nuovo tutte le immagini sommano a 1 (valori ricavati con Bayes)
+  \begin{scope}[xshift=10.2cm]
+    \foreach \i/\v/\t in {0/0.0674/0.07, 1/0.8413/0.84, 2/0.0750/0.07, 3/0.0163/0.02} {
+      \pgfmathsetmacro\cx{0.55+1.05*\i}
+      \fill[gmY1] ({\cx-0.25},0) rectangle ++(0.5,{2.4*\v});
+      \node[above, font=\tiny] at (\cx,{2.4*\v}) {\t};
+    }
+    \draw[TextGray] (0.13,2.62) -- ++(0,0.1) -- (4.12,2.72) -- ++(0,-0.1);
+    \node[TextGray, font=\tiny] at (2.125,2.92) {$\sum_x P(x \mid \text{cane}) = 1$};
+    \node[align=center] at (2.125,3.5) {\textbf{generativo condizionato}\\$P(X \mid Y = \text{cane})$};
+  \end{scope}
+  % legenda delle etichette
+  \foreach \k/\lab in {0/gatto, 1/cane, 2/scimmia} {
+    \fill[gmY\k] ({4.9+1.7*\k},-1.62) rectangle ++(0.2,0.2);
+    \node[right] at ({5.1+1.7*\k},-1.52) {$Y = \text{\lab}$};
+  }
+\end{tikzpicture}
+\end{widget}
+\caption{Cosa compete per la massa di probabilità nei tre modelli, con lo spazio delle immagini ridotto per semplicità a quattro immagini. Nel modello discriminativo competono le etichette di ogni immagine: le tre barre di un'immagine sommano a 1, anche per il rumore. Nel modello generativo competono tutte le immagini. Nel modello generativo condizionato, fissata l'etichetta $Y = \text{cane}$, competono di nuovo tutte le immagini, e le probabilità si ricavano dalle altre due con il teorema di Bayes.}
+\label{fig:generative-competition}
+\end{figure}
+
+\subsection{Tassonomia dei modelli generativi}\label{sec:tassonomia-generativi}
+Un modello generativo può servire a generare nuovi dati: se ha imparato $P(x)$, può campionare immagini che non sono nel dataset ma che le imitano. Un modello generativo condizionato, invece, è utile anche per assegnare etichette rigettando gli outlier. Un'immagine con $P(x \mid y)$ bassa per tutte le etichette, come il rumore della figura~\ref{fig:generative-competition}, non appartiene a nessuna classe e può essere scartata.
+
+Esistono diverse famiglie di modelli generativi, che si distinguono per il modo in cui trattano la densità $p(x)$ (figura~\ref{fig:tassonomia-generativi}). I modelli a \textbf{densità esplicita} definiscono $p(x)$ in modo esplicito. In alcuni casi la densità si calcola direttamente (tractable density), come nei modelli autoregressivi. In altri si può solo approssimare (approximate density), come nei Variational Autoencoder e nei Diffusion Models.
+
+I modelli a \textbf{densità implicita}, invece, non definiscono mai $p(x)$: imparano soltanto a campionare da essa. Il campionamento può essere diretto, come nelle Generative Adversarial Network (GAN), oppure passare da una catena di Markov, come nelle Generative Stochastic Network (GSN).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\small, >=Stealth,
+  box/.style={draw=RuleGray, rounded corners=3pt, inner sep=4pt, minimum height=7mm, align=center},
+  esempio/.style={box, fill=Accent!6, font=\scriptsize}]
+  \node[box, draw=Accent, thick] (root) at (0,0) {\textbf{Modelli generativi}};
+  \node[box] (esp) at (-3.4,-1.5) {Densità esplicita\\{\scriptsize $p(x)$ è definita}};
+  \node[box] (imp) at (3.4,-1.5) {Densità implicita\\{\scriptsize si campiona senza definire $p(x)$}};
+  \node[box] (tra) at (-5.0,-3.0) {Tractable density};
+  \node[box] (app) at (-1.9,-3.0) {Approximate density};
+  \node[box] (dir) at (2.2,-3.0) {Diretta};
+  \node[box] (mar) at (4.6,-3.0) {Markov chain};
+  \node[esempio] (ar) at (-5.0,-4.4) {Autoregressivi\\(PixelRNN, PixelCNN)};
+  \node[esempio] (vae) at (-2.75,-4.4) {Variational\\Autoencoder};
+  \node[esempio] (dif) at (-1.0,-4.4) {Diffusion\\Models};
+  \node[esempio] (gan) at (2.2,-4.4) {GAN};
+  \node[esempio] (gsn) at (4.6,-4.4) {GSN};
+  \foreach \a/\b in {root/esp, root/imp, esp/tra, esp/app, imp/dir, imp/mar, tra/ar, app/vae, app/dif, dir/gan, mar/gsn}
+    \draw[->, TextGray] (\a.south) -- (\b.north);
+\end{tikzpicture}
+\caption{Tassonomia dei modelli generativi. I modelli a densità esplicita definiscono $p(x)$, e la calcolano direttamente o la approssimano. I modelli a densità implicita imparano solo a campionare da $p(x)$.}
+\label{fig:tassonomia-generativi}
+\end{figure}
+
+\section{Modelli autoregressivi}\label{sec:autoregressivi}
+I modelli autoregressivi sono modelli a densità esplicita: l'obiettivo è definire una funzione parametrizzata $f_W(x)$ che rappresenti la distribuzione $p(x)$, dove $W$ è l'insieme dei parametri (pesi) del modello.
+
+Il training avviene con la \textbf{Maximum Likelihood Estimation} (MLE): cerchiamo i pesi che rendono più probabili i dati del training set. Dato un dataset $X = \{x^{(i)}\}_{i=1}^m$, risolviamo il seguente problema di ottimizzazione:
+\[
+    \begin{aligned}
+        W^* &= \arg\max_W \prod_i p(x^{(i)}) \\
+            &= \arg\max_W \sum_i \log p(x^{(i)}) \\
+            &= \arg\max_W \sum_i \log f_W(x^{(i)})
+    \end{aligned}
+\]
+dove il passaggio al logaritmo non cambia il massimo, in quanto il logaritmo è una funzione crescente, e trasforma il prodotto in una somma, più semplice da derivare.
+
+Resta il problema di come calcolare $p(x)$. Pensiamo a un'immagine: è un vettore di pixel $x = (x_1, \dots, x_n)$, e $p(x)$ è la probabilità congiunta di tutti i suoi pixel. I modelli autoregressivi la rendono trattabile scomponendola con la chain rule:
+\[
+    p(x) = p(x_1, x_2, \dots, x_n) = \prod_{i=1}^{n} p(x_i \mid x_1, \dots, x_{i-1})
+\]
+dove ogni fattore è la probabilità di un pixel dati tutti i pixel che lo precedono. In pratica, l'immagine viene generata un pixel alla volta, e ogni nuovo pixel dipende da quelli già generati. Ad esempio, un'immagine $28 \times 28$ in scala di grigi ha 784 pixel, quindi 784 fattori.
+
+Ogni fattore $p(x_i \mid x_1, \dots, x_{i-1})$ dipende da un numero di pixel che cresce con $i$: il primo pixel non dipende da niente, l'ultimo dipende da tutti gli altri 783. Un MLP non è opportuno, perché richiede un input di dimensione fissa. Si potrebbe pensare di utilizzare un MLP diverso per ogni pixel, ma servirebbero 784 reti, ognuna con i propri pesi e addestrata su un solo pixel per immagine. Serve quindi un'architettura che \textbf{condivida i pesi} tra tutti i pixel, in modo che una sola rete modelli tutti i fattori. Le RNN e le CNN hanno proprio questa proprietà.
+
+\paragraph{PixelRNN e PixelCNN.} PixelRNN e PixelCNN sono due modi per realizzare $f_W$: la rete riceve i pixel già generati e restituisce la distribuzione del pixel successivo, ad esempio con una softmax sui 256 valori di intensità. Il prodotto di queste probabilità è $p(x)$, e massimizzarne il logaritmo equivale a una cross-entropy su ogni pixel.
+
+La \textbf{PixelRNN} utilizza una RNN (Recurrent Neural Network), ovvero una rete che viene applicata in modo ricorrente: l'output di un passo diventa l'input del passo successivo. A ogni passo utilizza gli stessi pesi, quindi gestisce senza problemi sequenze di lunghezza variabile. L'immagine viene generata partendo da un angolo, un pixel dopo l'altro, e la RNN tiene traccia dei pixel già generati. Il problema è la lentezza, in quanto sia il training che la generazione sono sequenziali.
+
+La \textbf{PixelCNN} sostituisce la RNN con delle convoluzioni, che guardano una regione di pixel già generati attorno a quello da predire (con un'opportuna maschera, in modo che ogni pixel veda solo quelli precedenti). Lo stesso kernel scorre su tutte le posizioni, come visto per il parameter sharing nel capitolo~\ref{ch:cnn}, e sfrutta il fatto che in un'immagine i pixel vicini sono i più correlati. Il prezzo è che ogni pixel vede solo un intorno, e non tutti i pixel precedenti come nella RNN.
+
+In cambio, il training è più veloce: in fase di training l'immagine è nota per intero, quindi le convoluzioni si calcolano in parallelo su tutti i pixel. La generazione, invece, resta sequenziale, perché per generare un pixel servono quelli precedenti.
+
+\section{Autoencoder}\label{sec:autoencoder}
+Un \textbf{autoencoder} è un'architettura neurale che impara delle feature dai dati grezzi senza utilizzare etichette. L'idea è banale: prendiamo l'input, lo comprimiamo in una rappresentazione più piccola (perdendo informazione) e proviamo a ricostruirlo a partire da questa.
+
+Perché passare dalla ricostruzione? Vorremmo delle feature utili per qualche task, ma queste feature non si possono osservare direttamente: non abbiamo un target con cui confrontarle. Possiamo risolvere il problema utilizzando come target l'input stesso. L'architettura è divisa in due parti (figura~\ref{fig:autoencoder-schema}):
+\begin{itemize}
+    \item \textbf{Encoder} $f_W$: trasforma l'input $x$ nel codice $h = f_W(x)$, ovvero la sua rappresentazione nello spazio latente.
+    \item \textbf{Decoder} $g_{W^*}$: a partire dal codice, prova a ricostruire l'input.
+\end{itemize}
+
+Encoder e decoder hanno ciascuno i propri parametri, $W$ e $W^*$. La ricostruzione di $x$ è quindi:
+\[
+    \hat{x} = g_{W^*}(h) = g_{W^*}(f_W(x))
+\]
+dove $\hat{x}$ deve essere il più possibile simile a $x$. Se il codice è più piccolo dell'input, l'encoder è costretto a tenere solo le informazioni che servono davvero per la ricostruzione, e queste sono le feature che cerchiamo. Encoder e decoder sono di solito simmetrici, e possono essere dei semplici layer fully connected oppure dei layer convoluzionali.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\small]
+  \fill[Accent!75] (0,0) rectangle (0.7,3);
+  \node[white] at (0.35,1.5) {$x$};
+  \filldraw[fill=Accent!8, draw=Accent!60] (0.9,0) -- (2.4,0.9) -- (2.4,2.1) -- (0.9,3) -- cycle;
+  \node at (1.65,1.5) {$f_W$};
+  \fill[ObsColor!30] (2.6,0.9) rectangle (3.3,2.1);
+  \node at (2.95,1.5) {$h$};
+  \filldraw[fill=Accent!8, draw=Accent!60] (3.5,0.9) -- (5.0,0) -- (5.0,3) -- (3.5,2.1) -- cycle;
+  \node at (4.25,1.5) {$g_{W^*}$};
+  \fill[Accent!35] (5.2,0) rectangle (5.9,3);
+  \node at (5.55,1.5) {$\hat{x}$};
+  \foreach \x/\t in {0.35/input, 1.65/encoder, 2.95/codice, 4.1/decoder, 5.75/ricostruzione}
+    \node[font=\scriptsize, TextGray, anchor=base] at (\x,-0.4) {\t};
+\end{tikzpicture}
+\caption{Schema di un autoencoder: l'encoder $f_W$ comprime l'input $x$ nel codice $h$, e il decoder $g_{W^*}$ prova a ricostruire l'input a partire dal codice.}
+\label{fig:autoencoder-schema}
+\end{figure}
+
+Dopo il training, il decoder si può buttare via. L'encoder ha imparato una rappresentazione dei dati, e quindi si può utilizzare come \textbf{feature extractor}: ad esempio, possiamo mettere un classificatore sopra l'encoder (figura~\ref{fig:autoencoder-classificatore}). Il vantaggio è che le feature si imparano senza etichette. Per il fine-tuning di encoder e classificatore basta quindi un dataset etichettato molto più piccolo di quello che servirebbe partendo da zero. È la stessa idea del transfer learning (capitolo~\ref{ch:addestramento-cnn}), con la differenza che qui il pre-training non utilizza etichette.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\small, >=Stealth,
+  blocco/.style={draw=RuleGray, minimum height=6mm, inner sep=3pt}]
+  \node[blocco, fill=Accent!10, minimum width=3.2cm] (x) at (0,0) {$x$};
+  \node[blocco, fill=ObsColor!20, minimum width=2cm] (z) at (0,1.5) {$z$};
+  \node[blocco, fill=red!10, minimum width=7mm] (yh) at (0,3) {$\hat{y}$};
+  \node[blocco, fill=red!10, minimum width=7mm] (y) at (1.6,3) {$y$};
+  \node (loss) at (0.8,4.3) {loss (softmax, \dots)};
+  \draw[->] (x) -- node[right, font=\scriptsize] {encoder (pre-addestrato)} (z);
+  \draw[->] (z) -- node[right, font=\scriptsize] {classificatore} (yh);
+  \draw[->] (yh) -- (loss);
+  \draw[->] (y) -- (loss);
+  \node[left, font=\scriptsize, TextGray] at (-1.7,0) {input};
+  \node[left, font=\scriptsize, TextGray] at (-1.1,1.5) {feature};
+  \node[left, font=\scriptsize, TextGray] at (-0.45,3) {predizione};
+  \node[right, font=\scriptsize, TextGray] at (1.95,3) {etichetta};
+  \draw[->, TextGray] (4.2,4.0) -- node[right, align=left, font=\scriptsize] {fine-tuning di\\encoder e\\classificatore,\\anche con\\pochi dati} (4.2,-0.1);
+\end{tikzpicture}
+\caption{Un classificatore costruito sopra l'encoder di un autoencoder, che fa da feature extractor. Encoder e classificatore vengono poi addestrati insieme sul task finale, anche con pochi dati etichettati.}
+\label{fig:autoencoder-classificatore}
+\end{figure}
+
+Gli autoencoder hanno diverse applicazioni pratiche, in cui l'input viene trasformato in una versione ``migliore'' di sé stesso:
+\begin{itemize}
+    \item \textbf{Miglioramento della qualità} di un'immagine, ad esempio togliendo il rumore.
+    \item \textbf{Inpainting}: ricostruire le parti mancanti o coperte di un'immagine, ad esempio togliendo delle scritte.
+    \item \textbf{Recolorization}: colorare immagini in bianco e nero.
+    \item \textbf{Semantic segmentation}: assegnare una classe a ogni pixel, con un'architettura encoder-decoder che produce una mappa grande quanto l'input.
+\end{itemize}
+
+\subsection{Un esempio: l'autoencoder lineare}\label{sec:autoencoder-lineare}
+Consideriamo un input $x \in \mathbb{R}^D$ e un singolo hidden layer, il cui output è il codice $h \in \mathbb{R}^k$. Il caso più semplice è un autoencoder \textbf{lineare}:
+\[
+    h = f_W(x) = Wx + b, \qquad \hat{x} = g_{W^*}(h) = W^*h + c = W^*(Wx + b) + c
+\]
+dove $W \in \mathbb{R}^{k \times D}$ e $b \in \mathbb{R}^{k}$ sono i parametri dell'encoder, mentre $W^* \in \mathbb{R}^{D \times k}$ e $c \in \mathbb{R}^{D}$ sono quelli del decoder. Le dimensioni tornano: $W$ porta un vettore di $D$ componenti in uno di $k$, e $W^*$ fa il viaggio inverso.
+
+Se addestriamo encoder e decoder minimizzando l'errore quadratico $\|\hat{x} - x\|_2^2$, si può dimostrare che la soluzione ottima si ottiene con i \textbf{pesi legati} (tied weights), ovvero $W^* = W^T$. Questo autoencoder è equivalente alla \textbf{PCA} (Principal Component Analysis): le righe di $W$ generano lo stesso sottospazio delle prime $k$ componenti principali dei dati.
+
+\paragraph{Perché i pesi legati.} L'encoder proietta $x$ su un sottospazio di dimensione $k$, generato dalle righe di $W$. Minimizzando l'errore quadratico, la ricostruzione migliore è la \textbf{proiezione ortogonale} di $x$ su questo sottospazio. Se le righe di $W$ sono una base ortonormale, come le componenti principali della PCA, la trasposta $W^T$ inverte la proiezione: riporta il codice nello spazio di partenza senza deformarlo. In altre parole, encoder e decoder lavorano nello stesso spazio vettoriale.
+
+La figura~\ref{fig:autoencoder} mostra un autoencoder lineare con pesi legati, addestrato su immagini di cifre scritte a mano di $8 \times 8$ pixel (quindi $D = 64$).
+
+Il codice $h$ ha $k = 8$ componenti, e ogni componente dice quanto una delle feature (le righe di $W$) è presente nell'input. Il decoder parte dal bias $c$, che è l'immagine media del dataset\footnote{In questo caso $b = -Wc$, quindi $h = W(x - c)$: l'encoder misura quanto l'input si discosta dall'immagine media lungo ogni feature.}, e somma le feature pesate dal codice:
+\[
+    \hat{x} = c + W^T h = c + \sum_{j=1}^{k} h_j w_j
+\]
+dove $w_j$ è la $j$-esima riga di $W$. Più $k$ è grande, più la ricostruzione è fedele: con $k = 64$ è perfetta, ma il codice non comprime più niente.
+
+\begin{figure}[htbp]
+\centering
+\begin{widget}{autoencoder}[k=8, digit=2]
+\begin{tikzpicture}[font=\scriptsize]
+  \definecolor{aeNeg}{HTML}{B3261E}\definecolor{gmTeal}{HTML}{5FB3B9}\colorlet{aePos}{Accent!70!gmTeal}
+  % input, encoder, codice (k = 8), decoder e ricostruzione della cifra 2
+  \node at (0.8,0.3) {input $x$};
+  \pixgrid{(0,0)}{0.2}{0,6,75,100,31,0,0,0,0,69,100,100,81,0,0,0,0,44,38,31,88,12,0,0,0,0,0,0,75,19,0,0,0,0,0,25,81,0,0,0,0,0,6,81,31,0,0,0,0,0,62,100,62,50,25,0,0,0,81,94,100,75,44,0}
+  \node at (0.8,-1.85) {$D = 64$};
+  \filldraw[fill=aePos!14, draw=aePos] (1.8,0) -- (2.6,-0.5) -- (2.6,-1.1) -- (1.8,-1.6) -- cycle;
+  \node at (2.2,-0.8) {\normalsize$f$};
+  \node at (2.2,-1.85) {encoder};
+  \node at (4.0,0.3) {codice $h$};
+  \draw[RuleGray] (2.8,-0.8) -- (5.2,-0.8);
+  \fill[aePos] (2.82,-0.8) rectangle ++(0.26,0.312);
+  \fill[aePos] (3.12,-0.8) rectangle ++(0.26,0.199);
+  \fill[aeNeg] (3.42,-0.8) rectangle ++(0.26,-0.535);
+  \fill[aeNeg] (3.72,-0.8) rectangle ++(0.26,-0.101);
+  \fill[aePos] (4.02,-0.8) rectangle ++(0.26,0.078);
+  \fill[aeNeg] (4.32,-0.8) rectangle ++(0.26,-0.006);
+  \fill[aePos] (4.62,-0.8) rectangle ++(0.26,0.360);
+  \fill[aeNeg] (4.92,-0.8) rectangle ++(0.26,-0.135);
+  \node at (4.0,-1.85) {$k = 8$};
+  \filldraw[fill=aePos!14, draw=aePos] (6.2,0) -- (5.4,-0.5) -- (5.4,-1.1) -- (6.2,-1.6) -- cycle;
+  \node at (5.8,-0.8) {\normalsize$g$};
+  \node at (5.8,-1.85) {decoder};
+  \node at (7.2,0.3) {ricostruzione $\hat{x}$};
+  \pixgrid{(6.4,0)}{0.2}{0,7,77,100,47,0,0,0,0,37,95,80,75,14,0,0,0,29,40,28,79,16,0,0,0,3,0,19,68,6,0,0,0,0,0,37,69,11,2,0,0,2,17,70,60,9,15,0,0,7,66,98,77,53,52,7,0,7,80,100,77,61,50,17}
+  \node at (7.2,-1.85) {errore $0.77$};
+  % il decoder come somma: immagine media più le feature pesate dal codice
+  \node[anchor=west] at (-0.1,-2.95) {\normalsize$\hat{x} =$};
+  \pixgrid{(0.75,-2.55)}{0.1}{0,2,33,74,74,36,9,1,0,12,65,75,64,51,12,1,0,16,62,44,44,49,11,0,0,15,57,55,62,47,14,0,0,15,48,57,64,55,18,0,0,10,43,45,48,51,22,0,0,4,47,60,59,55,23,1,0,2,35,76,74,42,13,2}
+  \node at (1.15,-3.5) {$c$};
+  \node[anchor=east] at (2.70,-2.95) {$+\,0.80\,\cdot$};
+  \signgrid{(2.75,-2.55)}{0.1}{0,4,52,31,8,22,2,-1,0,28,56,-34,11,50,3,-1,0,18,-19,-50,40,38,-7,-1,0,-15,-59,8,48,10,-12,0,0,-37,-85,-38,-20,-9,-5,0,0,-25,-70,-57,-48,-3,9,0,0,2,13,-21,-25,32,15,0,0,3,54,33,2,21,8,3}
+  \node at (3.15,-3.5) {$w_1$};
+  \node[anchor=east] at (4.55,-2.95) {$+\,0.51\,\cdot$};
+  \signgrid{(4.60,-2.55)}{0.1}{0,3,14,3,15,33,18,2,0,6,-17,1,26,15,17,1,0,-10,-56,14,64,1,-8,0,0,-22,-53,39,74,-14,-18,0,0,-25,-25,76,80,-47,-36,0,0,-14,-37,76,85,-68,-61,0,0,-3,-43,34,27,-81,-42,0,0,3,20,-5,-55,-50,-5,2}
+  \node at (5.00,-3.5) {$w_2$};
+  \node[anchor=east] at (6.40,-2.95) {$-\,1.38\,\cdot$};
+  \signgrid{(6.45,-2.55)}{0.1}{0,-4,-30,-32,32,64,28,4,0,-19,-21,-16,0,67,38,4,0,-10,-1,-18,-23,74,36,2,0,11,17,-17,2,85,36,0,0,13,8,-34,-4,62,23,0,0,6,-29,-41,21,35,-17,-1,0,-4,-57,-41,13,-20,-54,-5,0,-4,-30,-24,-33,-56,-40,-8}
+  \node at (6.85,-3.5) {$w_3$};
+  \node[anchor=east] at (8.25,-2.95) {$-\,0.26\,\cdot$};
+  \signgrid{(8.30,-2.55)}{0.1}{0,-6,-49,-54,-9,-26,-20,-3,0,-21,-85,-10,42,-8,-13,-1,0,-34,-61,76,77,16,-6,0,0,-27,-32,53,60,23,-15,0,0,-14,-27,-3,36,44,-3,0,0,-2,-14,-16,7,54,23,1,0,-3,-30,-36,9,62,39,4,0,-6,-56,-58,62,85,27,7}
+  \node at (8.70,-3.5) {$w_4$};
+  \node[anchor=east] at (10.10,-2.95) {$+\,0.20\,\cdot$};
+  \signgrid{(10.15,-2.55)}{0.1}{0,-3,-18,14,3,-36,-20,-1,0,-11,-9,1,28,46,-8,-2,0,-21,-47,-31,28,77,4,-1,0,-24,-67,-65,-6,36,21,0,0,8,16,-1,-16,-4,23,0,0,21,85,49,-22,-26,9,0,0,5,55,42,-26,-10,4,-2,0,-3,-15,-5,-11,8,3,-5}
+  \node at (10.55,-3.5) {$w_5$};
+  \node[anchor=east] at (11.95,-2.95) {$-\,0.01\,\cdot$};
+  \signgrid{(12.00,-2.55)}{0.1}{0,-2,-18,3,-3,7,12,3,0,-3,-11,-21,-62,-30,9,2,0,-7,-30,-66,-56,-25,-1,1,0,-8,-23,-36,6,11,-3,0,0,-7,7,42,62,56,12,0,0,-14,-29,11,-22,-22,40,1,0,-13,-52,-5,-85,-39,58,4,0,-3,-15,-5,-23,36,32,3}
+  \node at (12.40,-3.5) {$w_6$};
+  \node[anchor=west] at (12.85,-2.95) {\normalsize$+ \dots$};
+  % la ricostruzione al variare di k
+  \pixgrid{(0.60,-4.0)}{0.15}{0,3,50,85,77,44,9,1,0,22,85,63,68,69,13,0,0,23,55,26,58,62,9,0,0,10,36,58,79,51,10,0,0,2,18,43,58,52,16,0,0,1,19,25,31,51,25,0,0,5,51,52,50,66,28,1,0,3,54,87,75,49,16,3}
+  \node[align=center] at (1.20,-5.6) {$k = 1$\\errore $4.02$};
+  \pixgrid{(2.75,-4.0)}{0.15}{0,4,53,85,79,50,12,1,0,23,81,63,73,71,16,0,0,21,45,29,70,62,8,0,0,6,27,65,92,48,7,0,0,0,14,57,72,43,10,0,0,0,12,39,47,38,13,0,0,5,44,58,55,51,21,1,0,3,57,86,65,40,15,4}
+  \node[align=center] at (3.35,-5.6) {$k = 2$\\errore $3.76$};
+  \pixgrid{(4.90,-4.0)}{0.15}{0,7,75,100,62,16,0,0,0,36,100,73,69,33,0,0,0,30,51,32,76,18,0,0,0,3,20,70,86,0,0,0,0,0,12,77,71,3,0,0,0,0,30,64,34,13,21,0,0,7,79,85,47,57,48,4,0,6,80,100,78,64,35,8}
+  \node[align=center] at (5.50,-5.6) {$k = 4$\\errore $1.79$};
+  \pixgrid{(7.05,-4.0)}{0.15}{0,7,77,100,47,0,0,0,0,37,95,80,75,14,0,0,0,29,40,28,79,16,0,0,0,3,0,19,68,6,0,0,0,0,0,37,69,11,2,0,0,2,17,70,60,9,15,0,0,7,66,98,77,53,52,7,0,7,80,100,77,61,50,17}
+  \node[align=center] at (7.65,-5.6) {$k = 8$\\errore $0.77$};
+  \pixgrid{(9.20,-4.0)}{0.15}{0,8,72,96,41,0,0,1,0,44,98,78,85,2,0,1,0,43,48,18,86,11,0,0,0,9,0,12,71,12,1,0,0,0,0,43,62,6,1,0,0,1,12,85,47,2,7,0,0,7,65,94,72,58,44,4,0,8,74,92,78,63,46,13}
+  \node[align=center] at (9.80,-5.6) {$k = 16$\\errore $0.51$};
+  \pixgrid{(11.35,-4.0)}{0.15}{0,6,75,100,31,0,0,0,0,69,100,100,81,0,0,0,0,44,37,31,87,12,0,0,0,0,0,0,75,19,0,0,0,0,0,25,81,0,0,0,0,0,6,81,31,0,0,0,0,0,63,100,62,50,25,0,0,0,81,94,100,75,44,0}
+  \node[align=center] at (11.95,-5.6) {$k = 64$\\errore $0.00$};
+\end{tikzpicture}
+\end{widget}
+\caption{Un autoencoder lineare con pesi legati sul dataset \emph{digits} di scikit-learn (1797 cifre di $8 \times 8$ pixel), con i pesi ottimi, ovvero le componenti principali del dataset. La cifra 2 viene codificata in $k = 8$ numeri (in rosso i valori negativi) e ricostruita dal decoder come l'immagine media $c$ più le feature $w_j$ pesate dal codice. Al crescere di $k$ la ricostruzione migliora, fino a diventare esatta con $k = D = 64$.}
+\label{fig:autoencoder}
+\end{figure}
+
+\paragraph{Autoencoder non lineare.} Come in un MLP, possiamo aggiungere una funzione di attivazione non lineare dopo il layer dell'encoder, ad esempio una sigmoide:
+\[
+    h = f_W(x) = \sigma(Wx + b)
+\]
+Sul decoder bisogna invece fare attenzione. Se l'input ha valori reali, non possiamo applicare una sigmoide all'output, perché la ricostruzione sarebbe limitata tra 0 e 1. Se invece l'input è binario, ovvero $x \in \{0, 1\}^D$, la sigmoide è proprio la scelta opportuna:
+\[
+    \hat{x} = g_{W^*}(h) = \sigma(W^*h + c)
+\]
+dove $\sigma(z) \in [0, 1]$ si può interpretare come la probabilità che ogni componente valga 1.
+
+\subsection{Training dell'autoencoder}\label{sec:autoencoder-training}
+Per trovare i pesi $W$ e $W^*$ serve una loss function $L(x, \hat{x})$ che misuri l'errore di ricostruzione, ovvero la differenza tra l'input $x$ e la sua ricostruzione $\hat{x}$. Il problema di ottimizzazione è:
+\[
+    \min_{W, W^*} L(x, \hat{x}) = \min_{W, W^*} L\big(x, g_{W^*}(f_W(x))\big)
+\]
+La scelta di $L$ dipende dal tipo di input, come per il decoder. Con input a valori reali si utilizza la squared loss:
+\[
+    L(x, \hat{x}) = \|\hat{x} - x\|_2^2 = \sum_{d=1}^{D} (\hat{x}_d - x_d)^2
+\]
+dove $D$ è la dimensione dell'input. Con input binari si utilizza invece la cross-entropy:
+\[
+    L(x, \hat{x}) = -\sum_{d=1}^{D} \big( x_d \log \hat{x}_d + (1 - x_d) \log(1 - \hat{x}_d) \big)
+\]
+che è la loss della regressione logistica, applicata a ogni componente dell'input.
+
+In pratica, si minimizza la loss media sul training set, $\frac{1}{m}\sum_{i=1}^{m} L(x^{(i)}, \hat{x}^{(i)})$, con la backpropagation e la discesa del gradiente. Osserviamo che non servono etichette: il target di ogni esempio è l'esempio stesso.
+
+\subsection{Undercomplete e overcomplete}\label{sec:under-over}
+Progettare un autoencoder significa bilanciare la capacità di encoder e decoder con la dimensione $k$ del codice. Dato un input di dimensione $D$, si distinguono due casi (figura~\ref{fig:under-over}): autoencoder \textbf{undercomplete}, con $k < D$, e \textbf{overcomplete}, con $k \geq D$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\scriptsize,
+  unit/.style={draw, circle, minimum size=4.5mm, inner sep=0pt},
+  code/.style={unit, fill=ObsColor!30}]
+  % undercomplete: 5 -> 2 -> 5
+  \foreach \i in {1,...,5} {
+    \node[unit] (a\i) at (0,{0.6*(3-\i)}) {};
+    \node[unit] (c\i) at (2.4,{0.6*(3-\i)}) {};
+  }
+  \foreach \j in {1,2} \node[code] (b\j) at (1.2,{0.6*(1.5-\j)}) {};
+  \foreach \i in {1,...,5} \foreach \j in {1,2} \draw (a\i) -- (b\j) (b\j) -- (c\i);
+  \node[align=center] at (1.2,-1.75) {undercomplete\\$k = 2 < D = 5$};
+  % overcomplete: 3 -> 5 -> 3
+  \begin{scope}[xshift=5.2cm]
+    \foreach \i in {1,2,3} {
+      \node[unit] (p\i) at (0,{0.6*(2-\i)}) {};
+      \node[unit] (r\i) at (2.4,{0.6*(2-\i)}) {};
+    }
+    \foreach \j in {1,...,5} \node[code] (q\j) at (1.2,{0.6*(3-\j)}) {};
+    \foreach \i in {1,2,3} \foreach \j in {1,...,5} \draw (p\i) -- (q\j) (q\j) -- (r\i);
+    \node[align=center] at (1.2,-1.75) {overcomplete\\$k = 5 > D = 3$};
+  \end{scope}
+\end{tikzpicture}
+\caption{Autoencoder undercomplete, con il codice (i neuroni colorati) più piccolo dell'input, e overcomplete, con il codice più grande dell'input.}
+\label{fig:under-over}
+\end{figure}
+
+Nel caso undercomplete il codice fa da \textbf{collo di bottiglia} (bottleneck): l'informazione deve passare da $D$ a $k$ numeri, quindi la rete deve scegliere cosa tenere. È il caso della figura~\ref{fig:autoencoder}. La matrice $W$ impara dei pattern ricorrenti nei dati, la cui combinazione lineare serve a ricostruire l'input, e per ogni $x$ il codice $h$ dice quanto è presente ciascuna delle $k$ feature.
+
+Il collo di bottiglia, da solo, non basta. Se encoder e decoder sono molto complessi (ad esempio, con tanti layer), la rete può ottenere un errore di ricostruzione basso anche con $k$ piccolo, senza catturare proprietà interessanti dei dati. Al limite, con $k = 1$ potrebbe imparare a dare un indice a ogni esempio del training set e a ricostruirlo a partire dall'indice \cite{Goodfellow-et-al-2016}. In questo caso l'autoencoder è utile per la compressione, ma molto meno per estrarre feature.
+
+Nel caso overcomplete il problema è ancora più evidente. Se il codice ha almeno la dimensione dell'input, la rete può raggiungere un errore nullo semplicemente copiando l'input nell'output, ad esempio con $f$ e $g$ uguali alla funzione identità. Il codice, in questo caso, non cattura nessuna proprietà dei dati (nella figura~\ref{fig:autoencoder} succede con $k = 64$).
+
+In entrambi i casi, quindi, l'errore di ricostruzione non basta: bisogna vincolare quello che la rete può imparare. In altre parole, un autoencoder tende ad andare in overfitting (impara ``troppo bene'' a copiare i dati), e va regolarizzato.
+
+\section{Autoencoder regolarizzati}\label{sec:autoencoder-regolarizzati}
+Per evitare che un autoencoder con troppa capacità impari la funzione identità (soprattutto nel caso overcomplete), si aggiunge alla loss un \textbf{termine di regolarizzazione} $R$. La loss diventa quindi:
+\[
+    L(x, \hat{x}) + R
+\]
+dove $R$ penalizza le rappresentazioni che non vogliamo, e costringe la rete a imparare caratteristiche utili della distribuzione dei dati invece di una semplice copia dell'input. Vediamo tre modi per farlo.
+
+\subsection{Sparse autoencoder}
+Uno \textbf{sparse autoencoder} impone un vincolo di sparsità sul codice $h$: per ogni input, solo pochi neuroni del codice possono essere attivi (diversi da zero). Anche con $k \geq D$, quindi, ogni input viene descritto da poche feature, e la rete non può limitarsi a copiarlo. Ci sono due modi principali per ottenere la sparsità:
+\begin{itemize}
+    \item \textbf{Penalità $L_1$}: si aggiunge alla loss la somma dei valori assoluti delle attivazioni del codice:
+    \[
+        R(h) = \lambda \sum_{j=1}^{k} |h_j|
+    \]
+    dove $\lambda$ regola il peso della regolarizzazione. Osserviamo che la penalità agisce sul codice $h$, non sui pesi (a differenza della regolarizzazione $L_1$ classica), e porta a zero il contributo dei neuroni meno rilevanti.
+    \item \textbf{Penalità KL}: con attivazioni del codice in $[0, 1]$ (ad esempio, con una sigmoide), si fissa un'attivazione media target $p$ molto bassa, ad esempio $0.05$. Si penalizza poi la distanza tra $p$ e l'attivazione media $\hat{p}_j$ di ogni neurone, misurata con la KL divergence:
+    \[
+        R(h) = \sum_{j=1}^{k} D_{KL}(p \,\|\, \hat{p}_j) = \sum_{j=1}^{k} \left( p \log\frac{p}{\hat{p}_j} + (1 - p) \log\frac{1 - p}{1 - \hat{p}_j} \right)
+    \]
+    dove $\hat{p}_j = \frac{1}{m}\sum_{i=1}^{m} h_j(x^{(i)})$ è l'attivazione media del neurone $j$ sul training set. In pratica, ogni neurone del codice deve restare spento per la maggior parte degli input.
+\end{itemize}
+
+\subsection{Denoising autoencoder}
+Un \textbf{denoising autoencoder} (DAE) cambia il task: invece di ricostruire l'input, deve ripulirlo. Il training funziona così:
+\begin{enumerate}
+    \item l'input $x$ viene corrotto con un processo casuale (ad esempio, aggiungendo rumore gaussiano), ottenendo $\tilde{x}$;
+    \item l'encoder codifica l'input corrotto, $h = f(\tilde{x})$;
+    \item il decoder deve ricostruire l'input \textbf{originale} $x$, non quello corrotto.
+\end{enumerate}
+
+La loss confronta quindi la ricostruzione con l'input pulito, in media su tutte le possibili corruzioni:
+\[
+    L_{DAE} = \mathbb{E}_{\tilde{x} \sim p(\tilde{x} \mid x)} \big[ L(x, g(f(\tilde{x}))) \big]
+\]
+dove $p(\tilde{x} \mid x)$ è il processo di corruzione. Copiare l'input, qui, non serve: la copia di $\tilde{x}$ contiene ancora il rumore. La rete deve quindi imparare la struttura dei dati, per capire quale parte dell'input è rumore e quale no. È lo stesso principio di applicazioni come l'inpainting viste prima.
+
+\subsection{Contractive autoencoder}
+Mentre il DAE rende robusta la ricostruzione rispetto a input corrotti, un \textbf{contractive autoencoder} (CAE) rende robusto il codice: se l'input cambia di poco, anche il codice $h = f(x)$ deve cambiare di poco. La sensibilità dell'encoder si misura con la sua matrice Jacobiana, ovvero la matrice delle derivate parziali $\partial h_j / \partial x_d$, e la loss la penalizza tramite la norma di Frobenius:
+\[
+    L_{CAE} = L(x, \hat{x}) + \lambda \left\| \frac{\partial f(x)}{\partial x} \right\|_F^2
+\]
+dove $\|J\|_F^2 = \sum_{j,d} J_{jd}^2$ è la somma dei quadrati di tutti gli elementi della matrice $J$.
+
+Il termine di regolarizzazione spinge il codice a essere localmente piatto, mentre l'errore di ricostruzione lo costringe a cambiare lungo le direzioni in cui variano davvero i dati. Il risultato è un codice che cattura solo le variazioni importanti dei dati.
+
+\section*{Riferimenti}
+Il materiale visto in questo capitolo comprende:
+\begin{itemize}
+    \item Materiale visto a lezione (5 Novembre 2026)
+    \item Materiale del corso \emph{TODO: scrivere il nome del materiale, slides ecc}
+    \item Appunti di Daniele Materia \emph{TODO: scrivere il link al github di Daniele}
+    \item \citetitle{Furnari-FAD-generative} \cite{Furnari-FAD-generative}, per la regola di Bayes nei classificatori generativi.
+    \item Capitolo 14, \emph{Autoencoders}, del libro \citetitle{Goodfellow-et-al-2016} \cite{Goodfellow-et-al-2016}, per il rischio di capacità eccessiva negli autoencoder undercomplete.
+    \item Il dataset \emph{digits} di scikit-learn per il widget dell'autoencoder lineare: \url{https://scikit-learn.org/stable/datasets/toy_dataset.html}.
+\end{itemize}
