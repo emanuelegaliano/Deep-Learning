@@ -6,7 +6,18 @@ Esistono diversi modi di allenare un modello di ML/DL ma alla base di tutti i me
 \[
     P(Y \mid X)
 \]
-In questo caso, la categoria di modelli viene chiamata \textbf{Discriminativi} ed impara a predire l'etichetta $Y$ data l'immagine $X$. In generale, il supervised learning è utile quando abbiamo un dataset etichettato, ovvero quando abbiamo a disposizione le etichette per ogni dato di input. Tuttavia, in molti casi non abbiamo dataset etichettati, o le etichette si possono ottenere ma sono lunghe e costose. Da questo è nato il concetto di \textbf{unsupervised learning}, in cui il dataset contiene solo i dati $X$ che formano una certa distribuzione di probabilità. Esistono diverse categorie di modelli di unsupervised learning:
+In questo caso, la categoria di modelli viene chiamata \textbf{Discriminativi} ed impara a predire l'etichetta $Y$ data l'immagine $X$.
+
+La classificazione non è l'unico task supervisionato. Oltre alla regressione, in cui l'etichetta è un numero reale, l'etichetta può avere una struttura più complessa:
+\begin{description}
+    \item[Object detection] Per ogni oggetto di interesse (ad esempio, ogni persona) il modello deve trovare la classe e il \textbf{bounding box}, ovvero il rettangolo che lo contiene. Il bounding box è descritto da quattro numeri $(x, y, w, h)$, ovvero la posizione di un vertice, la larghezza e l'altezza\footnote{Qui $x$ e $y$ indicano le coordinate del rettangolo nell'immagine, non il dato e l'etichetta.}. Trovarlo è quindi un problema di regressione.
+    \item[Semantic segmentation] Il modello deve assegnare una classe a ogni pixel dell'immagine, ad esempio erba, gatto, albero o cielo.
+    \item[Image captioning] L'etichetta è una frase che descrive l'immagine, ad esempio ``un gatto seduto su una valigia''.
+\end{description}
+
+In tutti questi casi l'obiettivo è lo stesso: imparare una funzione che mappa l'input $x$ nell'etichetta $y$.
+
+In generale, il supervised learning è utile quando abbiamo un dataset etichettato, ovvero quando abbiamo a disposizione le etichette per ogni dato di input. Tuttavia, in molti casi non abbiamo dataset etichettati, o le etichette si possono ottenere ma sono lunghe e costose. Da questo è nato il concetto di \textbf{unsupervised learning}, in cui il dataset contiene solo i dati $X$ che formano una certa distribuzione di probabilità. Esistono diverse categorie di modelli di unsupervised learning:
 \begin{description}
     \item[Clustering] In questo caso, il modello cerca di raggruppare i dati in base a delle caratteristiche simili per formare delle "etichette" in modo automatico (non supervisionato). Un esempio di clustering è il K-means, che raggruppa i dati in $K$ cluster in base alla distanza tra i punti.
     \item[Dimensionality Reduction] Qui il modello cerca di ridurre la dimensionalità dei dati, mantenendo le caratteristiche più importanti. Un esempio di dimensionality reduction è il PCA (Principal Component Analysis), che cerca di trovare le componenti principali dei dati e proiettarli in uno spazio a bassa dimensionalità.
@@ -20,6 +31,8 @@ Un esempio che verrà studiato in questo capitolo sono i \textbf{modelli generat
 \]
 
 Riprendendo l'esempio dei gatti e dei cani, un modello generativo cerca di imparare la distribuzione delle immagini di gatti e cani e ogni immagine compete tra loro all'interno della distribuzione $P(x)$. In altre parole, poiché il modello deve imitare una distribuzione e quindi deve valere $\int_x P(x) dx = 1$, non può assegnare più probabilità a un'immagine irrealistica, perché questo significherebbe che la probabilità delle immagini realistiche sarebbe più bassa.
+
+Questo rende $P(X)$ molto più difficile da imparare di $P(Y \mid X)$: per distribuire la massa di probabilità in modo sensato, il modello deve avere una comprensione profonda delle immagini. Ad esempio, è più probabile un cane seduto o un cane in piedi? E un cane con tre zampe o una scimmia con tre braccia? Un modello discriminativo non deve porsi nessuna di queste domande, perché gli basta capire se nell'immagine c'è un gatto o un cane.
 
 Esiste inoltre un'altra categoria di modelli generativi, chiamati \textbf{modelli generativi condizionati}, che cercano di imparare la distribuzione condizionata dei dati rispetto a un'etichetta, ovvero
 \[
@@ -202,9 +215,52 @@ Ogni fattore $p(x_i \mid x_1, \dots, x_{i-1})$ dipende da un numero di pixel che
 
 \paragraph{PixelRNN e PixelCNN.} PixelRNN e PixelCNN sono due modi per realizzare $f_W$: la rete riceve i pixel già generati e restituisce la distribuzione del pixel successivo, ad esempio con una softmax sui 256 valori di intensità. Il prodotto di queste probabilità è $p(x)$, e massimizzarne il logaritmo equivale a una cross-entropy su ogni pixel.
 
-La \textbf{PixelRNN} utilizza una RNN (Recurrent Neural Network), ovvero una rete che viene applicata in modo ricorrente: l'output di un passo diventa l'input del passo successivo. A ogni passo utilizza gli stessi pesi, quindi gestisce senza problemi sequenze di lunghezza variabile. L'immagine viene generata partendo da un angolo, un pixel dopo l'altro, e la RNN tiene traccia dei pixel già generati. Il problema è la lentezza, in quanto sia il training che la generazione sono sequenziali.
+La \textbf{PixelRNN} \cite{vandenOord2016-PixelRNN} utilizza una RNN (Recurrent Neural Network), ovvero una rete che viene applicata in modo ricorrente: l'output di un passo diventa l'input del passo successivo. A ogni passo utilizza gli stessi pesi, quindi gestisce senza problemi sequenze di lunghezza variabile.
 
-La \textbf{PixelCNN} sostituisce la RNN con delle convoluzioni, che guardano una regione di pixel già generati attorno a quello da predire (con un'opportuna maschera, in modo che ogni pixel veda solo quelli precedenti). Lo stesso kernel scorre su tutte le posizioni, come visto per il parameter sharing nel capitolo~\ref{ch:cnn}, e sfrutta il fatto che in un'immagine i pixel vicini sono i più correlati. Il prezzo è che ogni pixel vede solo un intorno, e non tutti i pixel precedenti come nella RNN.
+L'immagine viene generata un pixel alla volta, partendo dall'angolo in alto a sinistra. Per ogni pixel la rete calcola uno stato nascosto (hidden state), che dipende dallo stato del pixel a sinistra e da quello del pixel sopra (oltre che dai loro colori):
+\[
+    h_{i,j} = f(h_{i,j-1}, h_{i-1,j}, W)
+\]
+dove $i$ e $j$ sono la riga e la colonna del pixel, e $f$ è una LSTM (un tipo particolare di RNN) con pesi $W$.
+
+Lo stato del pixel sopra dipende a sua volta dagli stati sopra e a sinistra di quel pixel, e così via. Ogni pixel dipende quindi \textbf{implicitamente} da tutti i pixel sopra e a sinistra.
+
+A partire dallo stato nascosto, la rete predice il colore del pixel un canale alla volta: prima il rosso, poi il verde (che dipende dal rosso) e infine il blu (che dipende da entrambi), ognuno con una softmax sui valori da 0 a 255.
+
+Il problema è la lentezza. Per calcolare $h_{i,j}$ servono gli stati a sinistra e sopra, quindi si possono calcolare insieme solo i pixel sulla stessa antidiagonale, ovvero con la stessa somma $i + j$ (figura~\ref{fig:pixelrnn}). Un'immagine $N \times N$ ha $2N - 1$ antidiagonali, e richiede quindi $2N - 1$ passi sequenziali, sia in training che in generazione. Ad esempio, per un'immagine $32 \times 32$ servono 63 passi, ognuno dei quali deve aspettare il precedente.
+
+\begin{figure}[htbp]
+\centering
+\begin{widget}{pixelrnn}[n=5, step=5]
+\begin{tikzpicture}[font=\scriptsize, >=Stealth,
+  px/.style={draw=RuleGray, circle, minimum size=5.5mm, inner sep=0pt},
+  attivo/.style={px, draw=Accent, fill=Accent!15, thick}]
+  % lo stato h_{i,j}: il numero è il passo in cui viene calcolato, i + j - 1
+  \foreach \i in {1,...,5} \foreach \j in {1,...,5} {
+    \pgfmathtruncatemacro\passo{\i+\j-1}
+    \ifnum\passo=5 \tikzset{stile/.style={attivo}}\else\tikzset{stile/.style={px}}\fi
+    \node[stile] (p\i\j) at ({1.0*\j},{-1.0*\i}) {\passo};
+  }
+  % ogni stato dipende da quello a sinistra e da quello sopra
+  % (evidenziate le frecce che portano al passo 5)
+  \foreach \i in {1,...,5} \foreach \j in {1,...,4} {
+    \pgfmathtruncatemacro\jdopo{\j+1}\pgfmathtruncatemacro\passo{\i+\j-1}
+    \ifnum\passo=4 \tikzset{freccia/.style={Accent, thick}}\else\tikzset{freccia/.style={RuleGray}}\fi
+    \draw[->, freccia] (p\i\j) -- (p\i\jdopo);
+  }
+  \foreach \i in {1,...,4} \foreach \j in {1,...,5} {
+    \pgfmathtruncatemacro\idopo{\i+1}\pgfmathtruncatemacro\passo{\i+\j-1}
+    \ifnum\passo=4 \tikzset{freccia/.style={Accent, thick}}\else\tikzset{freccia/.style={RuleGray}}\fi
+    \draw[->, freccia] (p\i\j) -- (p\idopo\j);
+  }
+  \node[right=3mm of p15, Accent, align=left] {passo 5: questi stati\\si calcolano insieme};
+\end{tikzpicture}
+\end{widget}
+\caption{Ordine di calcolo della PixelRNN su un'immagine $5 \times 5$. Ogni cerchio è lo stato $h_{i,j}$ di un pixel, e il numero indica il passo in cui viene calcolato. Ogni stato dipende da quello a sinistra e da quello sopra, quindi gli stati sulla stessa antidiagonale si calcolano insieme: sono evidenziati quelli del passo 5, con le frecce da cui dipendono. In totale servono $2N - 1 = 9$ passi.}
+\label{fig:pixelrnn}
+\end{figure}
+
+La \textbf{PixelCNN} \cite{vandenOord2016-PixelCNN} sostituisce la RNN con delle convoluzioni, che guardano una regione di pixel già generati attorno a quello da predire (con un'opportuna maschera, in modo che ogni pixel veda solo quelli precedenti). Lo stesso kernel scorre su tutte le posizioni, come visto per il parameter sharing nel capitolo~\ref{ch:cnn}, e sfrutta il fatto che in un'immagine i pixel vicini sono i più correlati. Il prezzo è che ogni pixel vede solo un intorno, e non tutti i pixel precedenti come nella RNN.
 
 In cambio, il training è più veloce: in fase di training l'immagine è nota per intero, quindi le convoluzioni si calcolano in parallelo su tutti i pixel. La generazione, invece, resta sequenziale, perché per generare un pixel servono quelli precedenti.
 
@@ -276,6 +332,10 @@ Gli autoencoder hanno diverse applicazioni pratiche, in cui l'input viene trasfo
     \item \textbf{Semantic segmentation}: assegnare una classe a ogni pixel, con un'architettura encoder-decoder che produce una mappa grande quanto l'input.
 \end{itemize}
 
+Un'altra applicazione è l'\textbf{anomaly detection}, ovvero il riconoscimento degli input anomali (outlier). L'autoencoder viene addestrato solo su dati normali, quindi impara a ricostruire bene gli input simili a quelli del training set, mentre un input anomalo viene ricostruito male. L'errore di ricostruzione fa da punteggio di anomalia: se supera una certa soglia, l'input viene segnalato come anomalo.
+
+Ad esempio, un autoencoder addestrato su foto di pezzi prodotti correttamente da una fabbrica ricostruisce male le foto dei pezzi difettosi. In alternativa si può lavorare sui codici: si raggruppano in cluster i codici dei dati, e un input con un codice lontano da tutti gli altri viene considerato un outlier.
+
 \subsection{Un esempio: l'autoencoder lineare}\label{sec:autoencoder-lineare}
 Consideriamo un input $x \in \mathbb{R}^D$ e un singolo hidden layer, il cui output è il codice $h \in \mathbb{R}^k$. Il caso più semplice è un autoencoder \textbf{lineare}:
 \[
@@ -283,7 +343,46 @@ Consideriamo un input $x \in \mathbb{R}^D$ e un singolo hidden layer, il cui out
 \]
 dove $W \in \mathbb{R}^{k \times D}$ e $b \in \mathbb{R}^{k}$ sono i parametri dell'encoder, mentre $W^* \in \mathbb{R}^{D \times k}$ e $c \in \mathbb{R}^{D}$ sono quelli del decoder. Le dimensioni tornano: $W$ porta un vettore di $D$ componenti in uno di $k$, e $W^*$ fa il viaggio inverso.
 
-Se addestriamo encoder e decoder minimizzando l'errore quadratico $\|\hat{x} - x\|_2^2$, si può dimostrare che la soluzione ottima si ottiene con i \textbf{pesi legati} (tied weights), ovvero $W^* = W^T$. Questo autoencoder è equivalente alla \textbf{PCA} (Principal Component Analysis): le righe di $W$ generano lo stesso sottospazio delle prime $k$ componenti principali dei dati.
+Vediamo un esempio con $D = 3$ e $k = 2$ (figura~\ref{fig:autoencoder-3-2}). L'encoder ha una matrice $W$ di dimensione $2 \times 3$ e un bias $b$ con 2 componenti:
+\[
+    \begin{bmatrix} h_1 \\ h_2 \end{bmatrix} =
+    \begin{bmatrix} w_{11} & w_{12} & w_{13} \\ w_{21} & w_{22} & w_{23} \end{bmatrix}
+    \begin{bmatrix} x_1 \\ x_2 \\ x_3 \end{bmatrix} +
+    \begin{bmatrix} b_1 \\ b_2 \end{bmatrix}
+\]
+dove $w_{jd}$ è il peso dell'arco che collega l'input $x_d$ al neurone $h_j$ del codice. La riga $j$ di $W$ contiene quindi i pesi degli archi che entrano in $h_j$, e la colonna $d$ quelli che escono da $x_d$.
+
+Il decoder ha invece una matrice $W^*$ di dimensione $3 \times 2$ e un bias $c$ con 3 componenti:
+\[
+    \begin{bmatrix} \hat{x}_1 \\ \hat{x}_2 \\ \hat{x}_3 \end{bmatrix} =
+    \begin{bmatrix} w^*_{11} & w^*_{12} \\ w^*_{21} & w^*_{22} \\ w^*_{31} & w^*_{32} \end{bmatrix}
+    \begin{bmatrix} h_1 \\ h_2 \end{bmatrix} +
+    \begin{bmatrix} c_1 \\ c_2 \\ c_3 \end{bmatrix}
+\]
+dove $w^*_{dj}$ è il peso dell'arco che collega $h_j$ all'output $\hat{x}_d$. In totale l'encoder ha $6 + 2 = 8$ parametri e il decoder $6 + 3 = 9$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\scriptsize, >=Stealth,
+  unit/.style={draw, circle, minimum size=7mm, inner sep=0pt},
+  code/.style={unit, fill=ObsColor!30}]
+  \foreach \d in {1,2,3} {
+    \node[unit] (x\d) at (0,{1.2*(2-\d)}) {$x_\d$};
+    \node[unit] (o\d) at (5,{1.2*(2-\d)}) {$\hat{x}_\d$};
+  }
+  \foreach \j in {1,2} \node[code] (h\j) at (2.5,{1.2*(1.5-\j)}) {$h_\j$};
+  \foreach \d in {1,2,3} \foreach \j in {1,2} \draw[->, RuleGray!70] (x\d) -- (h\j) (h\j) -- (o\d);
+  % i due archi dell'esempio
+  \draw[->, Accent, thick] (x2) -- node[above, pos=0.35, Accent] {$w_{12}$} (h1);
+  \draw[->, FigColor, thick] (h1) -- node[above right, pos=0.7, inner sep=1pt, FigColor] {$w^*_{31}$} (o3);
+  \node[TextGray, align=center] at (1.25,-2.1) {encoder\\$W$ è $2 \times 3$};
+  \node[TextGray, align=center] at (3.75,-2.1) {decoder\\$W^*$ è $3 \times 2$};
+\end{tikzpicture}
+\caption{Autoencoder lineare con $D = 3$ e $k = 2$ (i bias non sono disegnati). Il peso $w_{12}$ collega l'input $x_2$ al neurone $h_1$ del codice, e si trova nella riga 1 e nella colonna 2 di $W$. Il peso $w^*_{31}$ collega $h_1$ all'output $\hat{x}_3$, e si trova nella riga 3 e nella colonna 1 di $W^*$.}
+\label{fig:autoencoder-3-2}
+\end{figure}
+
+Se addestriamo encoder e decoder minimizzando l'errore quadratico $\|\hat{x} - x\|_2^2$, si può dimostrare che la soluzione ottima si ottiene con i \textbf{pesi legati} (tied weights), ovvero $W^* = W^T$. Questo autoencoder è equivalente alla \textbf{PCA} (Principal Component Analysis): le righe di $W$ generano lo stesso sottospazio delle prime $k$ componenti principali dei dati. Nell'esempio con $D = 3$ e $k = 2$, i pesi legati significano $w^*_{dj} = w_{jd}$: l'arco da $x_d$ a $h_j$ e quello da $h_j$ a $\hat{x}_d$ hanno lo stesso peso.
 
 \paragraph{Perché i pesi legati.} L'encoder proietta $x$ su un sottospazio di dimensione $k$, generato dalle righe di $W$. Minimizzando l'errore quadratico, la ricostruzione migliore è la \textbf{proiezione ortogonale} di $x$ su questo sottospazio. Se le righe di $W$ sono una base ortonormale, come le componenti principali della PCA, la trasposta $W^T$ inverte la proiezione: riporta il codice nello spazio di partenza senza deformarlo. In altre parole, encoder e decoder lavorano nello stesso spazio vettoriale.
 
@@ -375,6 +474,31 @@ Sul decoder bisogna invece fare attenzione. Se l'input ha valori reali, non poss
     \hat{x} = g_{W^*}(h) = \sigma(W^*h + c)
 \]
 dove $\sigma(z) \in [0, 1]$ si può interpretare come la probabilità che ogni componente valga 1.
+
+\subsection{Deep autoencoder}\label{sec:deep-autoencoder}
+Finora encoder e decoder avevano un solo layer. Come in un MLP, possiamo utilizzarne di più: si parla allora di \textbf{deep autoencoder}, o \textbf{stacked autoencoder}\footnote{Il nome viene dal fatto che, inizialmente, questi autoencoder venivano addestrati un layer alla volta, impilando (stacking) degli autoencoder con un solo hidden layer.}. L'encoder riduce la dimensione un layer alla volta, fino al codice, e il decoder fa il percorso inverso, di solito in modo simmetrico.
+
+Ad esempio, la figura~\ref{fig:deep-autoencoder} mostra un deep autoencoder per documenti di testo. L'input è un vettore con il numero di occorrenze di 2000 parole nel documento, e l'encoder lo comprime in 500, 250 e infine 10 numeri. A partire da questi 10 numeri, il decoder deve ricostruire tutti i 2000 conteggi. Il codice è quindi una rappresentazione molto compatta del documento, che si può utilizzare, ad esempio, per confrontare due documenti.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\scriptsize, >=Stealth]
+  \foreach \i/\n/\alt/\col in {0/2000/3.0/Accent!75, 1/500/2.0/Accent!20, 2/250/1.4/Accent!20, 3/10/0.5/ObsColor!45, 4/250/1.4/Accent!20, 5/500/2.0/Accent!20, 6/2000/3.0/Accent!35} {
+    \fill[\col] ({1.1*\i},{-\alt/2}) rectangle ++(0.5,\alt);
+    \node[anchor=base] at ({1.1*\i+0.25},-1.9) {\n};
+  }
+  \foreach \i in {0,...,5} \draw[->, TextGray] ({1.1*\i+0.6},0) -- ({1.1*\i+1.0},0);
+  \node[TextGray] at (0.25,1.75) {input};
+  \node[TextGray] at (6.85,1.75) {ricostruzione};
+  \draw[TextGray] (0,-2.2) -- (2.7,-2.2) node[midway, below] {encoder};
+  \node[TextGray, below] at (3.55,-2.2) {codice};
+  \draw[TextGray] (4.4,-2.2) -- (7.1,-2.2) node[midway, below] {decoder};
+\end{tikzpicture}
+\caption{Un deep autoencoder per documenti di testo. L'input contiene i conteggi di 2000 parole, e l'encoder lo comprime fino a un codice di 10 numeri passando da layer di 500 e 250 neuroni. Il decoder, simmetrico all'encoder, ricostruisce i 2000 conteggi a partire dal codice.}
+\label{fig:deep-autoencoder}
+\end{figure}
+
+Con più layer, e funzioni di attivazione non lineari, encoder e decoder possono rappresentare trasformazioni molto più complesse di quella lineare vista prima. Questo, però, aumenta la capacità della rete, e come vedremo nella sezione~\ref{sec:under-over} una rete troppo potente rischia di imparare a ricostruire l'input senza imparare feature utili.
 
 \subsection{Training dell'autoencoder}\label{sec:autoencoder-training}
 Per trovare i pesi $W$ e $W^*$ serve una loss function $L(x, \hat{x})$ che misuri l'errore di ricostruzione, ovvero la differenza tra l'input $x$ e la sua ricostruzione $\hat{x}$. Il problema di ottimizzazione è:
@@ -481,9 +605,10 @@ Il termine di regolarizzazione spinge il codice a essere localmente piatto, ment
 Il materiale visto in questo capitolo comprende:
 \begin{itemize}
     \item Materiale visto a lezione (5 Novembre 2026)
-    \item Materiale del corso \emph{TODO: scrivere il nome del materiale, slides ecc}
+    \item Slide del corso \emph{Generative Models: Autoregressive Models} (credit Justin Johnson), le slide sugli autoencoder e le note scritte a mano del corso.
     \item Appunti di Daniele Materia, capitolo 6 fino agli autoencoder regolarizzati: \url{https://danielemateria.github.io}.
     \item \citetitle{Furnari-FAD-generative} \cite{Furnari-FAD-generative}, per la regola di Bayes nei classificatori generativi.
+    \item I paper originali di PixelRNN e PixelCNN: \citetitle{vandenOord2016-PixelRNN} \cite{vandenOord2016-PixelRNN} e \citetitle{vandenOord2016-PixelCNN} \cite{vandenOord2016-PixelCNN}.
     \item Capitolo 14, \emph{Autoencoders}, del libro \citetitle{Goodfellow-et-al-2016} \cite{Goodfellow-et-al-2016}, per il rischio di capacità eccessiva negli autoencoder undercomplete.
     \item Il dataset \emph{digits} di scikit-learn per il widget dell'autoencoder lineare: \url{https://scikit-learn.org/stable/datasets/toy_dataset.html}.
 \end{itemize}

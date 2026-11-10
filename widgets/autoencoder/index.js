@@ -141,7 +141,7 @@ export default defineWidget({
       katex.render(`\\|\\hat{x} - x\\|_2^2 = ${fix(err)}, \\qquad k = ${k} \\text{ su } D = ${D}, \\qquad \\text{varianza conservata: } ${kept}\\%`, eq, { throwOnError: false });
 
       if (k === D) note.textContent = 'Con k = D il codice è grande quanto l\'input: la ricostruzione è perfetta, ma l\'autoencoder non ha compresso niente.';
-      else if (st.src === 'rumore') note.textContent = `Il rumore non somiglia a nessuna cifra del dataset: la ricostruzione resta lontana dall'input (errore ${fix(err)}, contro una media di ${fix(digitErr(k))} per le cifre con lo stesso k).`;
+      else if (st.src === 'rumore') note.textContent = `Il rumore non somiglia a nessuna cifra del dataset: la ricostruzione resta lontana dall'input (errore ${fix(err)}, contro una media di ${fix(digitErr(k))} per le cifre con lo stesso k). Su questo si basa l'anomaly detection.`;
       else if (st.src === 'disegno') note.textContent = 'Il decoder può produrre solo l\'immagine media più una combinazione delle k feature: la ricostruzione è la proiezione del disegno su questo sottospazio, quindi tende a somigliare a una cifra.';
       else note.textContent = 'Il codice h dice quanto ciascuna delle k feature (le righe di W) è presente nell\'input. Il decoder parte dall\'immagine media c e somma le feature pesate da h.';
     }
