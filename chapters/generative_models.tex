@@ -350,7 +350,7 @@ Vediamo un esempio con $D = 3$ e $k = 2$ (figura~\ref{fig:autoencoder-3-2}). L'e
     \begin{bmatrix} x_1 \\ x_2 \\ x_3 \end{bmatrix} +
     \begin{bmatrix} b_1 \\ b_2 \end{bmatrix}
 \]
-dove $w_{jd}$ è il peso dell'arco che collega l'input $x_d$ al neurone $h_j$ del codice. La riga $j$ di $W$ contiene quindi i pesi degli archi che entrano in $h_j$, e la colonna $d$ quelli che escono da $x_d$.
+dove $w_{jd}$ è il peso dell'arco che collega l'input $x_d$ al neurone $h_j$ del codice. La riga $j$ di $W$ contiene quindi i pesi degli archi che entrano in $h_j$, e la colonna $d$ quelli che escono da $x_d$. Il bias $b_j$, invece, è il peso dell'arco che arriva in $h_j$ da un'unità sempre uguale a 1, come visto nel capitolo~\ref{ch:ripasso}.
 
 Il decoder ha invece una matrice $W^*$ di dimensione $3 \times 2$ e un bias $c$ con 3 componenti:
 \[
@@ -359,7 +359,7 @@ Il decoder ha invece una matrice $W^*$ di dimensione $3 \times 2$ e un bias $c$ 
     \begin{bmatrix} h_1 \\ h_2 \end{bmatrix} +
     \begin{bmatrix} c_1 \\ c_2 \\ c_3 \end{bmatrix}
 \]
-dove $w^*_{dj}$ è il peso dell'arco che collega $h_j$ all'output $\hat{x}_d$. In totale l'encoder ha $6 + 2 = 8$ parametri e il decoder $6 + 3 = 9$.
+dove $w^*_{dj}$ è il peso dell'arco che collega $h_j$ all'output $\hat{x}_d$, e $c_d$ quello dell'arco che arriva in $\hat{x}_d$ dall'unità di bias. In totale l'encoder ha $6 + 2 = 8$ parametri e il decoder $6 + 3 = 9$.
 
 \begin{figure}[htbp]
 \centering
@@ -371,14 +371,21 @@ dove $w^*_{dj}$ è il peso dell'arco che collega $h_j$ all'output $\hat{x}_d$. I
     \node[unit] (o\d) at (5,{1.2*(2-\d)}) {$\hat{x}_\d$};
   }
   \foreach \j in {1,2} \node[code] (h\j) at (2.5,{1.2*(1.5-\j)}) {$h_\j$};
+  % unità di bias, sempre uguali a 1
+  \node[unit] (bx) at (0,2.4) {$1$};
+  \node[unit] (bh) at (2.5,1.8) {$1$};
   \foreach \d in {1,2,3} \foreach \j in {1,2} \draw[->, RuleGray!70] (x\d) -- (h\j) (h\j) -- (o\d);
-  % i due archi dell'esempio
+  \foreach \j in {1,2} \draw[->, RuleGray!70] (bx) -- (h\j);
+  \foreach \d in {1,2,3} \draw[->, RuleGray!70] (bh) -- (o\d);
+  % gli archi dell'esempio
   \draw[->, Accent, thick] (x2) -- node[above, pos=0.35, Accent] {$w_{12}$} (h1);
+  \draw[->, Accent, thick] (bx) -- node[above right, pos=0.4, inner sep=1pt, Accent] {$b_1$} (h1);
   \draw[->, FigColor, thick] (h1) -- node[above right, pos=0.7, inner sep=1pt, FigColor] {$w^*_{31}$} (o3);
-  \node[TextGray, align=center] at (1.25,-2.1) {encoder\\$W$ è $2 \times 3$};
-  \node[TextGray, align=center] at (3.75,-2.1) {decoder\\$W^*$ è $3 \times 2$};
+  \draw[->, FigColor, thick] (bh) -- node[above, pos=0.5, FigColor] {$c_1$} (o1);
+  \node[TextGray, align=center] at (1.0,-2.1) {encoder\\$W \in \mathbb{R}^{2 \times 3}$, $b \in \mathbb{R}^{2}$};
+  \node[TextGray, align=center] at (4.0,-2.1) {decoder\\$W^* \in \mathbb{R}^{3 \times 2}$, $c \in \mathbb{R}^{3}$};
 \end{tikzpicture}
-\caption{Autoencoder lineare con $D = 3$ e $k = 2$ (i bias non sono disegnati). Il peso $w_{12}$ collega l'input $x_2$ al neurone $h_1$ del codice, e si trova nella riga 1 e nella colonna 2 di $W$. Il peso $w^*_{31}$ collega $h_1$ all'output $\hat{x}_3$, e si trova nella riga 3 e nella colonna 1 di $W^*$.}
+\caption{Autoencoder lineare con $D = 3$ e $k = 2$. I nodi con valore 1 sono le unità di bias: l'arco che va da 1 a $h_j$ ha peso $b_j$, quello che va da 1 a $\hat{x}_d$ ha peso $c_d$. Il peso $w_{12}$ collega l'input $x_2$ al neurone $h_1$ del codice, e si trova nella riga 1 e nella colonna 2 di $W$. Il peso $w^*_{31}$ collega $h_1$ all'output $\hat{x}_3$, e si trova nella riga 3 e nella colonna 1 di $W^*$.}
 \label{fig:autoencoder-3-2}
 \end{figure}
 
