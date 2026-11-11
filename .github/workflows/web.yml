@@ -27,17 +27,17 @@ jobs:
         run: apt-get update && apt-get install -y --no-install-recommends ghostscript git
 
       - name: Appunti
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: notes
 
       - name: texweb
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: emanuelegaliano/texweb
           path: texweb
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -49,7 +49,7 @@ jobs:
 
       # le figure TikZ già compilate: si ricompilano solo quelle modificate
       - name: Cache delle figure
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: notes/.texweb/cache
           key: tikz-${{ hashFiles('notes/**/*.tex') }}
@@ -65,7 +65,7 @@ jobs:
           cp DeepLearning.pdf out/web/DeepLearning.pdf
         working-directory: notes
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: notes/out/web
 
@@ -77,4 +77,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
